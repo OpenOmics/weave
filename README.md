@@ -3,14 +3,26 @@
 This repository was created to contain the demultiplexing, sample sheet generation, and analysis workflow 
 initialization workflows that exist across the NIH.gov infrastructures.
 
-# Software design & developement plan (SDDP)
+# Operation
+__*REQUIREMENT*: manual run execution entry point__
+Some developing options for determining how to find run directories:
+- datetime.now(), query the top directory of the NGS data, directories younger now - day.
+- placing .lock files as breadcrumbs and walking directories for ones without them
 
-The value add of this software is still unclear as a modular drop-in system or a on-shot temporary solution. 
+Logging would be essential, some ideas about it's operation:
+- sqlite to catalogue what runs have been analyzed and has not + bread crumb lock
+- log entry point in script that gives last 10 or so entries
+- not entirely nailed down what all to store, some obvious meta information:
+    - run id, directory, run time, exit code, outputs, execution start, execution stop, manual/automatic execution
+
+# Software design & development plan (SDDP)
+
+The value add of this software is still unclear as a modular drop-in system or a one-shot temporary solution. 
 This can be as simple as some lines in bash that are engineered to
 the four things needed with this workflow:
     - demultiplex (from bespoke instruments to a modular system with configurations for multiple sequencing platforms)
     - generate a sample sheet from this directory and LIMS (labkey is the initial use-case, but do we support others)
-    - trigger the openomics pipelines for analysis
+    - trigger the OpenOmics pipelines for analysis
 
 Or as complex as a workflow that supports drop in configurations for different instruments and clusters, and 
 in-between those two extremes. 
