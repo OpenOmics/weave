@@ -20,9 +20,9 @@ Logging would be essential, some ideas about it's operation:
 The value add of this software is still unclear as a modular drop-in system or a one-shot temporary solution. 
 This can be as simple as some lines in bash that are engineered to
 the four things needed with this workflow:
-    - demultiplex (from bespoke instruments to a modular system with configurations for multiple sequencing platforms)
-    - generate a sample sheet from this directory and LIMS (labkey is the initial use-case, but do we support others)
-    - trigger the OpenOmics pipelines for analysis
+- demultiplex (from bespoke instruments to a modular system with configurations for multiple sequencing platforms)
+- generate a sample sheet from this directory and LIMS (labkey is the initial use-case, but do we support others)
+- trigger the OpenOmics pipelines for analysis
 
 Or as complex as a workflow that supports drop in configurations for different instruments and clusters, and 
 in-between those two extremes. 
@@ -33,5 +33,5 @@ don't find utility in this work at a brace scale then we will accept the simple 
 
 # Requirements
 
-Requirements for this software should be minimal. Python 3.6+, potentially some python libraries, a cron daemon, and a 
+Requirements for this software should be minimal. Python 3.8+, snakemake, singularity, a cron daemon, and a 
 user account with crontab access.
