@@ -10,6 +10,6 @@ setup(
     name=dunder['__name__'],
     version=dunder['__version__'],
     install_requires=reqs,
-    packages=find_packages(exclude=['test']),
+    package_dir={'Dmux': 'src/Dmux'},
     scripts=['bin/dmux']
 )
