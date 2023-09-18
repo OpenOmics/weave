@@ -1,2 +1,6 @@
 snakemake
 requests
+webdavclient3
+labkey
+docxtpl
+pandas

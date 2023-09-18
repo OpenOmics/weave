@@ -3,6 +3,11 @@
 This repository was created to contain the demultiplexing, sample sheet generation, and analysis workflow 
 initialization workflows that exist across the NIH.gov infrastructures.
 
+# Installation
+
+Please make sure to setup up ~/.netrc or other means of labkey authentication with the appropriate server information 
+and file permissions.
+
 # Operation
 __*REQUIREMENT*: manual run execution entry point__
 Some developing options for determining how to find run directories:
@@ -35,3 +40,5 @@ don't find utility in this work at a brace scale then we will accept the simple 
 
 Requirements for this software should be minimal. Python 3.8+, snakemake, singularity, a cron daemon, and a 
 user account with crontab access.
+
+Python package requirements in `requirements.txt`

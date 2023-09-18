@@ -5,6 +5,7 @@
 # ~~~~~~~~~~~~~~~
 from pathlib import Path
 from os import access as check_access, R_OK
+from Dmux.labkey import get_sample_sheet_for_run
 
 
 def get_all_seq_dirs(top_dir):
@@ -33,7 +34,12 @@ def is_dir_staged(run_dir):
     """
     TRANSFER_BREADCRUMB = 'RTAComplete.txt'
 
+
     analyzed_checks = [
-        Path(run_dir, TRANSFER_BREADCRUMB).exists()
+        Path(run_dir, TRANSFER_BREADCRUMB).exists(),
     ]
     return all(analyzed_checks)
+
+
+def is_dir_analyzed(run_dir):
+    return

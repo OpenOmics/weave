@@ -12,5 +12,9 @@ from Dmux.files import get_all_seq_dirs
 SEQUENCING_DIR = Path('/gs1/RTS/NextGen/SequencerRuns')
 
 
+def main():
+    pass
+
+
 if __name__ == '__main__':
     main()
