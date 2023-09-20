@@ -1,0 +1,149 @@
+import itertools
+import os
+import collections
+import json
+import glob
+from snakemake.exceptions import MissingInputException
+
+onstart:
+	shell("echo 'bcl2fastq conversion started {FCID} '| mutt -s 'bcl2fastq status ' `whoami`@mail.nih.gov ")
+onerror:
+	shell("echo 'bcl2fastq pipeline failed on {FCID} '|mutt -s ' bcl2fastq status' `whoami`@mail.nih.gov ")
+#onsuccess:
+#	shell("echo 'bcl2fastq pipeline finished successfully on {FCID} ' |mutt -s ' bcl2fastq status' `whoami`@mail.nih.gov  ")
+
+f = open(PATH+"/SampleSheet.csv", 'r')
+FCName=FCID.split("_")
+FCName=FCName[-1][1:]
+TARGET = []
+SAMPLES =[]
+
+# Original Files names has will come from the SampleSheet.csv
+#
+#
+NAMES ={}
+for line in f:
+	if 'Sample_ID' in line: 
+		column = line.split(",")
+		sampleID    =column.index('Sample_ID')
+		sampleName  =column.index('Sample_Name')
+		for line in f:
+			column = line.split(",")
+			SAMPLES += [column[sampleID]]
+			NAMES[column[sampleID]] = column[sampleName]
+			TARGET  += [PATH+"/Unaligned/Sample_"+column[sampleID]+"_"+FCName+"/Transfer.done"]
+			TARGET  += [PATH+"/Unaligned/Sample_"+column[sampleID]+"_"+FCName+"/Sample_"+column[sampleID]+"_"+FCName+"_R1.fastq.gz"]
+			TARGET  += [PATH+"/Unaligned/Sample_"+column[sampleID]+"_"+FCName+"/Sample_"+column[sampleID]+"_"+FCName+"_R2.fastq.gz"]
+NAMES['Undetermined'] = 'Undetermined'
+TARGET +=[PATH+"/Unaligned/Sample_Undetermined_"+FCName+"/Sample_Undetermined_"+FCName+"_R2.fastq.gz"]
+# For any sample where a ~ is  converted to _ in SampleSheet.csv we need to read SampleSheet_ori.csv to make fq files in original names.
+f = open(PATH+"/SampleSheet_ori.csv", 'r')
+for line in f:
+	if 'Sample_ID' in line:
+		column = line.split(",")
+		sampleID    =column.index('Sample_ID')
+		sampleName  =column.index('Sample_Name')
+		for line in f:
+			column = line.split(",")
+			if column[sampleID] not in SAMPLES:
+				NAMES[column[sampleID]] = column[sampleName]
+				oldname=column[sampleID].replace("~", "_")
+				# if a replacement happened the replaced names are not targets anymore
+				TARGET.remove(PATH+"/Unaligned/Sample_"+oldname+"_"+FCName+"/Sample_"+oldname+"_"+FCName+"_R1.fastq.gz")
+				TARGET.remove(PATH+"/Unaligned/Sample_"+oldname+"_"+FCName+"/Sample_"+oldname+"_"+FCName+"_R2.fastq.gz")
+				TARGET.remove(PATH+"/Unaligned/Sample_"+oldname+"_"+FCName+"/Transfer.done")
+				# Add correct files to target list
+				TARGET  += [PATH+"/Unaligned/Sample_"+column[sampleID]+"_"+FCName+"/Transfer.done"]
+				TARGET  += [PATH+"/Unaligned/Sample_"+column[sampleID]+"_"+FCName+"/Sample_"+column[sampleID]+"_"+FCName+"_R1.fastq.gz"]
+				TARGET  += [PATH+"/Unaligned/Sample_"+column[sampleID]+"_"+FCName+"/Sample_"+column[sampleID]+"_"+FCName+"_R2.fastq.gz"]
+#################################
+localrules: Final
+#################################
+# Parse html pages and send report email.
+#################################
+
+rule Final:
+	input: TARGET
+	params:
+		rulename = "final",
+		batch    = "-l nodes=1,cput=100:00:00,pvmem=5gb,ncpus=3"
+	shell: """
+	############################
+	chgrp -R "nci-frederick pcc all users" /projects/lihc_hiseq/static/{FCID}/Unaligned/
+	{SOURCE}/makeReport.pl /projects/lihc_hiseq/static/ {FCID}/Unaligned {FCName} |mutt -e "my_hdr Content-Type: text/html" -s "bcl2fastq status on {FCID}" patidarr@mail.nih.gov -c corinne.camalier@nih.gov -c amanda.peach@nih.gov -c dasbiswa@mail.nih.gov -c li.chen2@nih.gov
+	############################
+	"""
+#################################
+# Transfer data to biowulf
+#################################
+rule Transfer:
+	input:
+		"{run}/Unaligned/Sample_{library}_{FCID}/Sample_{library}_{FCID}_R1.fastq.gz"
+	output:
+		"{run}/Unaligned/Sample_{library}_{FCID}/Transfer.done"
+	params:
+		rulename = "Transfer",
+		batch    = "-l nodes=1,cput=100:00:00,pvmem=1gb,ncpus=1"
+	shell: """
+	############################
+	rsync -avzr {wildcards.run}/Unaligned/Sample_{wildcards.library}_{wildcards.FCID}/ helix.nih.gov:/data/MoCha/DATA/Sample_{wildcards.library}_{wildcards.FCID}/
+	ssh biowulf "chgrp -R MoCha /data/MoCha/DATA/Sample_{wildcards.library}_{wildcards.FCID}/"
+	ssh biowulf "chmod 755  /data/MoCha/DATA/Sample_{wildcards.library}_{wildcards.FCID}"
+	ssh biowulf "chmod 644  /data/MoCha/DATA/Sample_{wildcards.library}_{wildcards.FCID}/*"
+	touch {output}
+	############################
+	"""
+
+#################################
+# Merge fq files if same sample is loaded on to multiple lanes.
+# Also changes names to contain FCID in it.
+#################################
+rule Merge:
+	input:
+		"{run}/Unaligned/Reports/html/tree.html",
+		"{run}/SampleSheet.csv"
+	output:
+		R1="{run}/Unaligned/Sample_{library}_{FCID}/Sample_{library}_{FCID}_R1.fastq.gz",
+		R2="{run}/Unaligned/Sample_{library}_{FCID}/Sample_{library}_{FCID}_R2.fastq.gz",
+	params:
+		rulename = "merge",
+		name     = lambda wildcards: NAMES[wildcards.library],
+		batch    = "-l nodes=1,cput=100:00:00,pvmem=5gb,ncpus=3"
+	shell: """
+	############################
+	newlib=`echo {params.name} |sed -e 's/~/_/g'`
+	R1=`find {wildcards.run}/Unaligned/ -name "${{newlib}}*_R1_*gz*" | tr '\\n' ' '`
+	R2=`find {wildcards.run}/Unaligned/ -name "${{newlib}}*_R2_*gz*" | tr '\\n' ' '`
+
+	count=`find {wildcards.run}/Unaligned/ -name "{wildcards.library}*_R1_*gz*" |wc -l`
+	if [ ${{count}} >1 ]; then
+		echo "Working on ${{R1}}"
+		/bin/zcat ${{R1}} |gzip >{output.R1} &
+		/bin/zcat ${{R2}} |gzip >{output.R2} &
+	else
+		echo "Working on ${{R1}}"
+		mv ${{R1}} {output.R1}
+		mv ${{R2}} {output.R2}
+	fi
+	wait
+	############################
+	"""	
+#################################
+# This is bcl2fastq conversion
+#################################
+rule BCL2FASTQ:
+	input:
+		"{run}/RTAComplete.txt"
+	output:
+		"{run}/Unaligned/Reports/html/tree.html"
+	params:
+		rulename = "bcl2fastq",
+		batch    = "-l nodes=1,cput=100:00:00,pvmem=72gb,ncpus=16"
+	shell: """
+	############################
+	module load bcl2fastq2
+	runName=`basename {wildcards.run}`
+	bcl2fastq -R {wildcards.run} -o {wildcards.run}/Unaligned/
+	chgrp -R "nci-frederick pcc all users" {wildcards.run}/Unaligned/
+	############################
+	"""
