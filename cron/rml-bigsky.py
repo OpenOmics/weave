@@ -6,10 +6,11 @@
 #   search the run directory, identify directories by lock or date, 
 #   stage the sample sheet, and kick off the 
 # ~~~~~~~~~~~~~~~
-from pathlib import Path
 from Dmux.files import get_all_seq_dirs
+from Dmux.config import DIRECTORY_CONFIGS
 
-SEQUENCING_DIR = Path('/gs1/RTS/NextGen/SequencerRuns')
+SERVER_NAME = 'bigsky'
+SEQUENCING_DIR = DIRECTORY_CONFIGS[SERVER_NAME]['seq']
 
 
 def main():
