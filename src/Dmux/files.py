@@ -6,8 +6,9 @@
 from pathlib import Path
 from os import access as check_access, R_OK
 from functools import partial
+from sample_sheet import SampleSheet
 from Dmux.labkey import LabKeyServer
-from Dmux.config import LABKEY_CONFIGS
+from Dmux.config import LABKEY_CONFIGS, DIRECTORY_CONFIGS
 
 
 def get_all_seq_dirs(top_dir, server):
@@ -24,7 +25,45 @@ def get_all_seq_dirs(top_dir, server):
                 if _file2.is_dir() and check_access(_file2, R_OK):
                     _dirs.append(_file2.resolve())
     # check if directory is processed or not
-    return list(filter(partial(is_dir_staged, server), _dirs))
+    return _dirs
+
+
+def get_all_staged_dirs(top_dir, server):
+    return list(filter(partial(is_dir_staged, server), get_all_seq_dirs(top_dir, server)))
+
+
+def runid2samplesheet(runid, top_dir=DIRECTORY_CONFIGS['bigsky']['seq']):
+    """
+        Given a valid run id return the path to the sample sheet
+    """
+    ss_path = Path(top_dir, runid)
+    if not ss_path.exists():
+        raise FileNotFoundError(f"Run directory does not exist: {ss_path}")
+    if Path(ss_path, f"SampleSheet_{runid}.txt").exists():
+        ss_path = Path(ss_path, f"SampleSheet_{runid}.txt")
+    elif Path(ss_path, f"SampleSheet_{runid}.csv").exists():
+        ss_path = Path(ss_path, f"SampleSheet_{runid}.csv")
+    else:
+        raise FileNotFoundError("Run sample sheet does not exist: " + str(ss_path) + f"/SampleSheet_{runid}.[txt, csv]")
+    return ss_path
+
+def sniff_samplesheet(ss):
+    """
+        Given a sample sheet file return the appropriate function to parse the
+        sheet.
+    """
+    # TODO: 
+    #   catalogoue and check for multiple types of sample sheets, so far just
+    #   the NextSeq, MinSeq, CellRanger are the only supported formats
+    return SampleSheet
+
+
+def parse_samplesheet(ss):
+    """
+        Parse the sample sheet into data structure
+    """
+    parser = sniff_samplesheet(ss)
+    return parser(ss)
 
 
 def is_dir_staged(server, run_dir):
@@ -32,9 +71,7 @@ def is_dir_staged(server, run_dir):
         filter check for wheter or not a directory has the appropriate breadcrumbs or not
 
         RTAComplete.txt - file transfer from instrument breadcrumb, CSV file with values:
-            Run Date, Run time, Instrument ID
-
-        
+            Run Date, Run time, Instrument ID        
     """
     global LABKEY_CONFIGS
     this_labkey_project = LABKEY_CONFIGS[server]['container_path']
@@ -46,13 +83,3 @@ def is_dir_staged(server, run_dir):
         SS_SHEET_EXISTS is not None
     ]
     return all(analyzed_checks)
-
-
-def is_dir_analyzed(run_dir):
-    """
-        Intention with this function is to take in a directory, and return a boolean on wheter it has been
-        analyzed or not.
-
-        TODO: Not totally sure how analysis breadcrumb have worked or will work....
-    """
-    return

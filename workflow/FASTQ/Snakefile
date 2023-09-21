@@ -1,0 +1,24 @@
+import itertools
+import os
+import collections
+import json
+import glob
+from snakemake.exceptions import MissingInputException
+
+
+rule BCL2FASTQ:
+	input:
+		"{run}/RTAComplete.txt"
+	output:
+		"{run}/Unaligned/Reports/html/tree.html"
+	params:
+		rulename = "bcl2fastq",
+		batch    = "-l nodes=1,cput=100:00:00,pvmem=72gb,ncpus=16"
+	shell: """
+	############################
+	module load bcl2fastq2
+	runName=`basename {wildcards.run}`
+	bcl2fastq -R {wildcards.run} -o {wildcards.run}/Unaligned/
+	chgrp -R "nci-frederick pcc all users" {wildcards.run}/Unaligned/
+	############################
+	"""
