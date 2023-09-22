@@ -25,7 +25,34 @@ LABKEY_COLUMNS = {
     }
 }
 
+def get_biowulf_seq_dirs():
+    top_dir = Path('/data/RTB_GRS/SequencerRuns/')
+    transfer_breadcrumb = 'RTAComplete.txt'
+    if not top_dir.exists():
+        return None
+    return [xx for x in top_dir.iterdir() if x.is_dir() for xx in x.iterdir() if xx.is_dir() and Path(xx, transfer_breadcrumb).exists()]
+
+
+def get_bigsky_seq_dirs():
+    top_dir = Path('/gs1/RTS/NextGen/SequencerRuns/')
+    transfer_breadcrumb = 'RTAComplete.txt'
+    if not top_dir.exists():
+        return None
+    return [xx for x in top_dir.iterdir() if x.is_dir() for xx in x.iterdir() if xx.is_dir() and Path(xx, transfer_breadcrumb).exists()]
+
+
+def get_locus_seq_dirs():
+    # TODO: locus
+    top_dir = Path('/hpcdata/rtb_grs/SequencerRuns/')
+    return None
+
 
 DIRECTORY_CONFIGS = {
-    'bigsky': {'seq': Path('/gs1/RTS/NextGen/SequencerRuns')}
+    'bigsky': {
+        'seq': get_bigsky_seq_dirs()
+    },
+    'biowulf': {
+        'seq': get_biowulf_seq_dirs()
+    }
+    # TODO: locus
 }
