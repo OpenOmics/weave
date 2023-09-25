@@ -4,9 +4,14 @@
 #   misc. helper functions for the Dmux software package
 # ~~~~~~~~~~~~~~~
 import re
+import json
+import tempfile
+import os
 from argparse import ArgumentTypeError
-from Dmux.config import DIRECTORY_CONFIGS
+from Dmux.config import DIRECTORY_CONFIGS, SNAKEFILE, PROFILE
 from dateutil.parser import parse as date_parser
+from subprocess import Popen, PIPE
+from tempfile import TemporaryDirectory
 from pathlib import Path
 from socket import gethostname
 
@@ -91,13 +96,45 @@ def valid_run_input(run):
 
     valid_run = None
     if Path(run).exists():
-        # this is a fill pathrun directory
+        # this is a full pathrun directory
         valid_run = Path(run).resolve()
     elif run in list(map(lambda d: d.name, seq_dirs)):
         for _r in seq_dirs:
             if run == _r.name:
                 valid_run = _r.resolve()
     else:
-        raise ArgumentTypeError(f'Sequencing run {esc_colors.BOLD}"{run}"{esc_colors.ENDC} does not exist on server {esc_colors.BOLD}"{host}"{esc_colors.ENDC}')
+        raise ArgumentTypeError(f"Sequencing run {esc_colors.BOLD}\"{run}\"{esc_colors.ENDC} does not exist on server {esc_colors.BOLD}\"{host}\"{esc_colors.ENDC}")
+    
+    if not Path(run, 'SampleSheet.csv'):
+        raise ArgumentTypeError(f"Sequencing run {esc_colors.BOLD}\"{run}\"{esc_colors.ENDC} is missing a sample sheet located at : {Path(run, 'SampleSheet.csv')}")    
         
     return valid_run
+
+
+def exec_demux_pipeline(configs):
+    global PROFILE
+    snake_file = SNAKEFILE['FASTQ']
+    fastq_demux_profile = PROFILE
+    
+    # with tempfile.TemporaryDirectory() as tmpdirname:
+    for i in range(0, len(configs['project'])):
+        this_config = {k: v[i] for k, v in configs.items()}
+        with Path('~').expanduser() as tmpdirname:
+            config_file = Path(tmpdirname, 'config.json').resolve()
+            json.dump(this_config, open(config_file, 'w'), indent=4)
+            top_env = os.environ.copy()
+            top_env['SMK_CONFIG'] = str(config_file)
+            this_cmd = "snakemake " + \
+                       "--dry-run --use-singularity " + \
+                      f"--configfile {config_file} --snakefile {snake_file} --profile {fastq_demux_profile}" 
+            import ipdb; ipdb.set_trace()
+            this_out, this_err = Popen(this_cmd, env=top_env)
+
+    pass
+
+
+def base_config():
+    this_config = {}
+    for elem_key in ('runs', 'project', 'sids', 'snum', 'rnum'):
+        this_config[elem_key] = []
+    return this_config

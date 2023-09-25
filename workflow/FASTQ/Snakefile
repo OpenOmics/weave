@@ -15,8 +15,9 @@ rule bcl2fastq:
 						run=config['runs'], 
 						project=config['projects'], 
 						sids=config['sample_ids'],
-					  )
-		reports 	= expand("{run}/Reports", run=config['runs'])
+						snum=config['snums'],
+					  ),
+		reports 	= expand("{run}/Reports", run=config['runs']),
 		stats		= expand("{run}/Stats", run=config['runs'])
 	singularity: "docker://umccr/bcl2fastq"
 	shell: 

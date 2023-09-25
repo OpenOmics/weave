@@ -1,4 +1,5 @@
 from pathlib import Path
+from os import access as check_access, R_OK
 
 
 CONTEXT_PATH = 'labkey'
@@ -49,10 +50,22 @@ def get_locus_seq_dirs():
 
 DIRECTORY_CONFIGS = {
     'bigsky': {
-        'seq': get_bigsky_seq_dirs()
+        'seq': get_bigsky_seq_dirs(),
+        'profile': Path(__file__, '..', '..', 'profiles').resolve()
     },
     'biowulf': {
-        'seq': get_biowulf_seq_dirs()
+        #'seq': get_biowulf_seq_dirs()
+        'seq': [xx for x in Path('/data/OpenOmics/dev').iterdir() if x.is_dir() and check_access(x, R_OK) 
+                for xx in x.iterdir() if xx.is_dir() and check_access(xx, R_OK) and Path(xx, 'RTAComplete.txt').exists()],
+        'profile': Path(__file__, '..', '..', 'profiles').resolve()
     }
     # TODO: locus
 }
+
+
+SNAKEFILE = {
+    'FASTQ': Path(__file__, '..', '..', 'workflow', 'FASTQ', 'Snakefile').resolve(),
+    'NGS_QC': Path(__file__, '..', '..', 'workflow', 'NGS_QC', 'Snakefile').resolve(),
+}
+
+PROFILE = Path(__file__, '..', '..', 'profile').resolve()

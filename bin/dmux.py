@@ -2,7 +2,6 @@
 # -*- coding: UTF-8 -*-
 import argparse
 from pathlib import Path
-from Dmux.config import DIRECTORY_CONFIGS
 from Dmux.files import runid2samplesheet, parse_samplesheet
 from Dmux import utils
 
@@ -15,9 +14,23 @@ parser_logs = sub_parser.add_parser('logs', help='logs subcommand help')
 def run(args):
     # 1. form sample sheet into snakemake configuration json
     # 2. subprocess.Popen to kick off valid demux snakemake pipeline
-    # 3. Log demultiplexing pipeline execution, run time, start finish, 
-    sample_sheets = [parse_samplesheet(Path(x, 'SampleSheet.csv')) for x in args.rundir]
-    import ipdb; ipdb.set_trace()
+    # 3. Log demultiplexing pipeline execution, run time, start finish
+    run_data = [(x, parse_samplesheet(Path(x, 'SampleSheet.csv'))) for x in args.rundir]
+    config = utils.base_config()
+    for rundir, sample_sheet in run_data:
+        config['runs'].append(rundir.name)
+        config['project'].append(sample_sheet.Header['Experiment Name'])
+        # config['samples'].append([dict(x) for x in sample_sheet.samples])
+        config['sids'].append([sample['Sample_ID'] for sample in sample_sheet.samples])
+        config['snum'].append([str(i) for i in range(1, len(sample_sheet.samples)+1)])
+        config['rnum'].append(['1', '2'] if sample_sheet.is_paired_end else ['1'])
+    
+    utils.exec_demux_pipeline(config)
+        
+
+
+def ngs_qc(args):
+    pass
 
 
 def logs(args):
@@ -33,6 +46,7 @@ if __name__ == '__main__':
 
     parser_run = sub_parsers.add_parser('run')
     parser_run.add_argument('rundir', metavar='Run directory', nargs="+", type=utils.valid_run_input, help='Full & complete run id, no wildcards or regex (format YYMMDD_INSTRUMENTID_TIME_FLOWCELLID)')
+    # type=utils.valid_run_input
     parser_run.set_defaults(func = run)
 
     parser_logs = sub_parsers.add_parser('logs', help='logs subcommand help')
