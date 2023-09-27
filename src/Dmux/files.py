@@ -47,6 +47,7 @@ def runid2samplesheet(runid, top_dir=DIRECTORY_CONFIGS['bigsky']['seq']):
         raise FileNotFoundError("Run sample sheet does not exist: " + str(ss_path) + f"/SampleSheet_{runid}.[txt, csv]")
     return ss_path
 
+
 def sniff_samplesheet(ss):
     """
         Given a sample sheet file return the appropriate function to parse the

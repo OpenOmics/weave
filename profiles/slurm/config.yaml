@@ -12,10 +12,8 @@ use-conda: "False"
 use-singularity: "True"
 jobs: "24"
 printshellcmds: "True"
-default-resources:
-  - runtime=100
-  - mem_mb=5000
-set-threads:
-  - bcl2fastq=24
 set-resources:
-  - bcl2fastq:mem_mb=32000
+  bcl2fastq:
+    mem_mb: 32000
+    threads: 24
+    partition: "quick"

@@ -14,22 +14,11 @@ from CookieCutter import CookieCutter
 
 logger = logging.getLogger(__name__)
 
-SIDECAR_VARS = os.environ.get("SNAKEMAKE_CLUSTER_SIDECAR_VARS", None)
 DEBUG = bool(int(os.environ.get("SNAKEMAKE_SLURM_DEBUG", "0")))
 
 if DEBUG:
     logging.basicConfig(level=logging.DEBUG)
     logger.setLevel(logging.DEBUG)
-
-
-def register_with_sidecar(jobid):
-    if SIDECAR_VARS is None:
-        return
-    sidecar_vars = json.loads(SIDECAR_VARS)
-    url = "http://localhost:%d/job/register/%s" % (sidecar_vars["server_port"], jobid)
-    logger.debug("POST to %s", url)
-    headers = {"Authorization": "Bearer %s" % sidecar_vars["server_secret"]}
-    requests.post(url, headers=headers)
 
 
 # cookiecutter arguments
@@ -97,9 +86,15 @@ for o in ("output", "error"):
 if "job-name" not in sbatch_options and "job_name" not in sbatch_options:
     sbatch_options["job-name"] = joblog.jobname
 
+if "account" in sbatch_options:
+    del sbatch_options['account']
+
+if 'partition' not in sbatch_options:
+    sbatch_options['account'] = 'norm*'
+
 # submit job and echo id back to Snakemake (must be the only stdout)
 jobid = slurm_utils.submit_job(jobscript, **sbatch_options)
-logger.debug("Registering %s with sidecar...", jobid)
-register_with_sidecar(jobid)
-logger.debug("... done registering with sidecar")
+# logger.debug("Registering %s with sidecar...", jobid)
+# register_with_sidecar(jobid)
+# logger.debug("... done registering with sidecar")
 print(jobid)

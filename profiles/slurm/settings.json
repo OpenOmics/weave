@@ -1,0 +1,5 @@
+{
+    "SBATCH_DEFAULTS": "--mail-type=ALL --mail-user=routsongrm@nih.gov",
+    "CLUSTER_NAME": "",
+    "CLUSTER_CONFIG": ""
+}

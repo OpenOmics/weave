@@ -7,13 +7,16 @@ import re
 import json
 import tempfile
 import os
+import yaml
 from argparse import ArgumentTypeError
-from Dmux.config import DIRECTORY_CONFIGS, SNAKEFILE, PROFILE
+from Dmux.config import DIRECTORY_CONFIGS, SNAKEFILE, PROFILE, get_current_server
 from dateutil.parser import parse as date_parser
 from subprocess import Popen, PIPE
 from tempfile import TemporaryDirectory
-from pathlib import Path
-from socket import gethostname
+from pathlib import Path, PurePath
+
+
+DEFAULT_CONFIG_KEYS = ('runs', 'run_ids', 'projects', 'sids', 'snums', 'rnums')
 
 
 class esc_colors:
@@ -28,29 +31,10 @@ class esc_colors:
     UNDERLINE = '\033[4m'
 
 
-def get_current_server():
-    hn = gethostname()
-    # bigsky hostnames
-    re_bigsky = (r"ai-rml.*\.niaid\.nih\.gov", 'bigsky')
-
-    # biowulf hostnames
-    re_biowulf_head = (r"biowulf\.nih\.gov", 'biowulf')
-    re_biowulf_compute = (r"cn\d{4}", 'biowulf')
-    
-    # locus hostnames
-    re_locus_head = (r"ai\-submit\d{1}", 'locus')
-    re_locus_compute = (r"ai\-hpcn\d{3}", 'locus')
-
-    host_profiles = [re_bigsky, re_biowulf_compute, re_biowulf_head, re_locus_compute, re_locus_head]
-
-    host = None
-    for pat, this_host in host_profiles:
-        if re.match(pat, hn):
-            host = this_host
-            break
-    if host is None:
-        raise ValueError(f'Unknown host profile')
-    return host
+class PathJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, PurePath):
+            return str(obj)
 
 
 def month2fiscalq(month):
@@ -112,21 +96,29 @@ def valid_run_input(run):
 
 
 def exec_demux_pipeline(configs):
-    global PROFILE
+    global PROFILE, SNAKEFILE
     snake_file = SNAKEFILE['FASTQ']
-    fastq_demux_profile = PROFILE
-    
-    # with tempfile.TemporaryDirectory() as tmpdirname:
-    for i in range(0, len(configs['project'])):
+    fastq_demux_profile = PROFILE[get_current_server()]
+    profile_config = {}
+    if Path(fastq_demux_profile, 'config.yaml').exists():
+        profile_config.update(yaml.safe_load(open(Path(fastq_demux_profile, 'config.yaml'))))
+
+    for i in range(0, len(configs['projects'])):
         this_config = {k: v[i] for k, v in configs.items()}
+        this_config.update(profile_config)
+        # with tempfile.TemporaryDirectory() as tmpdirname:
         with Path('~').expanduser() as tmpdirname:
             config_file = Path(tmpdirname, 'config.json').resolve()
-            json.dump(this_config, open(config_file, 'w'), indent=4)
+            json.dump(this_config, open(config_file, 'w'), cls=PathJSONEncoder, indent=4)
+            doutput = Path(this_config['runs'], 'demux')
+            doutput.mkdir(exist_ok=True, parents=True, mode=755)
             top_env = os.environ.copy()
             top_env['SMK_CONFIG'] = str(config_file)
+            top_env['MODS_TO_LOAD'] = 'bcl2fastq'
             this_cmd = "snakemake " + \
-                       "--dry-run --use-singularity " + \
-                      f"--configfile {config_file} --snakefile {snake_file} --profile {fastq_demux_profile}" 
+                       f"-use-singularity --singularity-args \"-B {this_config['runs']}:/work/in:rw,{str(doutput)}:/work/out:rw\" " + \
+                       f"-s {snake_file} " + \
+                       f"--profile {fastq_demux_profile}"
             import ipdb; ipdb.set_trace()
             this_out, this_err = Popen(this_cmd, env=top_env)
 
@@ -134,7 +126,8 @@ def exec_demux_pipeline(configs):
 
 
 def base_config():
+    global DEFAULT_CONFIG_KEYS
     this_config = {}
-    for elem_key in ('runs', 'project', 'sids', 'snum', 'rnum'):
+    for elem_key in DEFAULT_CONFIG_KEYS:
         this_config[elem_key] = []
     return this_config

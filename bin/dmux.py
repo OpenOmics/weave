@@ -18,15 +18,14 @@ def run(args):
     run_data = [(x, parse_samplesheet(Path(x, 'SampleSheet.csv'))) for x in args.rundir]
     config = utils.base_config()
     for rundir, sample_sheet in run_data:
-        config['runs'].append(rundir.name)
-        config['project'].append(sample_sheet.Header['Experiment Name'])
-        # config['samples'].append([dict(x) for x in sample_sheet.samples])
+        config['runs'].append(str(rundir.resolve()))
+        config['run_ids'].append(rundir.name)
+        config['projects'].append(sample_sheet.Header['Experiment Name'])
         config['sids'].append([sample['Sample_ID'] for sample in sample_sheet.samples])
-        config['snum'].append([str(i) for i in range(1, len(sample_sheet.samples)+1)])
-        config['rnum'].append(['1', '2'] if sample_sheet.is_paired_end else ['1'])
+        config['snums'].append([str(i) for i in range(1, len(sample_sheet.samples)+1)])
+        config['rnums'].append(['1', '2'] if sample_sheet.is_paired_end else ['1'])
     
     utils.exec_demux_pipeline(config)
-        
 
 
 def ngs_qc(args):

@@ -12,7 +12,7 @@ from typing import Union
 from uuid import uuid4
 import shlex
 from io import StringIO
-
+from Dmux.config import get_current_server
 from CookieCutter import CookieCutter
 from snakemake import io
 from snakemake.exceptions import WorkflowError
@@ -189,11 +189,33 @@ def format_sbatch_options(**sbatch_options):
     return options
 
 
+def format_modules(jobscript):
+    if 'MODS_TO_LOAD' not in os.environ:
+        return jobscript
+        
+    host = get_current_server()
+    module_script = []
+    if host == 'bigsky':
+        mod = 'spack'
+    else:
+        module_script.append("module purge\n")
+        mod = 'module'
+    to_load = os.environ['MODS_TO_LOAD']
+    module_script.append(f"{mod} load {' '.join(to_load.split(';'))}\n")
+    current_jobscript = open(jobscript).readlines()
+    jb = current_jobscript[0:2] + module_script +  current_jobscript[2:]
+    with open(jobscript, 'w') as fo:
+        fo.writelines(jb)
+    return jobscript
+
+
 def submit_job(jobscript, **sbatch_options):
     """Submit jobscript and return jobid."""
     options = format_sbatch_options(**sbatch_options)
+    jobscript = format_modules(jobscript)
     try:
         cmd = ["sbatch"] + ["--parsable"] + options + [jobscript]
+        import os; os.system(f'cp {jobscript} ~/jb_tmp.sh')
         res = sp.check_output(cmd)
     except sp.CalledProcessError as e:
         raise e

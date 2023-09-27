@@ -4,27 +4,42 @@ import os
 
 configfile: os.environ['SMK_CONFIG']
 
+demux_runs_projects = {
+	'run': config['runs'],
+	'project': config['projects'],
+}
+
+
+demux_full_params = {
+	**demux_runs_projects,
+	'sids': config['sids'], 
+	'snum': config['snums'], 
+	'rnum': config['rnums']
+}
+
+
+rule all:
+	input:
+		expand("{run}", run=config['runs']),
+		expand("{run}/{project}/{sids}_S{snum}_R{rnum}.fastq.gz", **demux_full_params),
+
 
 rule bcl2fastq:
 	input:
-		expand("{run}", run=config['runs']),
-		expand("{run}/SampleSheet.csv", run=config['runs'])
+		run_dirs = expand("{run}", run=config['runs']),
+		samplesheets = expand("{run}/SampleSheet.csv", run=config['runs'])
 	output:
-		seq_data 	= expand(
-						"{run}/{project}/{sids}_S{snum}_R{rnum}.fastq.gz", 
-						run=config['runs'], 
-						project=config['projects'], 
-						sids=config['sample_ids'],
-						snum=config['snums'],
-					  ),
-		reports 	= expand("{run}/Reports", run=config['runs']),
-		stats		= expand("{run}/Stats", run=config['runs'])
+		out_dir		= expand("{run}/{project}", **demux_runs_projects),
+		seq_data 	= expand("{run}/{project}/{sids}_S{snum}_R{rnum}.fastq.gz", **demux_full_params),
+		reports 	= expand("{run}/{project}/Reports", **demux_runs_projects),
+		stats		= expand("{run}/{project}/Stats", **demux_runs_projects)
 	singularity: "docker://umccr/bcl2fastq"
+	threads: 24
 	shell: 
 		"""
 			bcl2fastq \ 
-			--runfolder-dir {input.run_dirs} \
+			--runfolder-dir /work/in \
 			--min-log-level=INFO \
 			-r {threads} -p {threads} -w {threads} \
-			--no-lane-splitting
+			--no-lane-splitting -o /work/out
 		"""
