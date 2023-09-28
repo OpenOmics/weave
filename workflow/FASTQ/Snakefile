@@ -36,8 +36,8 @@ rule bcl2fastq:
 	singularity: "docker://umccr/bcl2fastq"
 	threads: 24
 	shell: 
-		"""
-			bcl2fastq \ 
+		r"""
+			bcl2fastq \
 			--runfolder-dir /work/in \
 			--min-log-level=INFO \
 			-r {threads} -p {threads} -w {threads} \

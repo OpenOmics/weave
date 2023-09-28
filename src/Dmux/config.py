@@ -2,6 +2,7 @@ import re
 from pathlib import Path
 from os import access as check_access, R_OK
 from socket import gethostname
+from collections import defaultdict
 
 
 # ~~~ hosts configurations ~~~ 
@@ -56,8 +57,8 @@ LABKEY_COLUMNS = {
 
 # ~~~ snakemake configurations ~~~ 
 SNAKEFILE = {
-    'FASTQ': Path(__file__, '..', '..', 'workflow', 'FASTQ', 'Snakefile').resolve(),
-    'NGS_QC': Path(__file__, '..', '..', 'workflow', 'NGS_QC', 'Snakefile').resolve(),
+    'FASTQ': Path(__file__, '../../..', 'workflow', 'FASTQ', 'Snakefile').resolve(),
+    'NGS_QC': Path(__file__, '../../..', 'workflow', 'NGS_QC', 'Snakefile').resolve(),
 }
 PROFILE = {
     # TODO: 'locus': 
@@ -96,7 +97,7 @@ DIRECTORY_CONFIGS = {
     },
     'biowulf': {
         #'seq': get_biowulf_seq_dirs()
-        'seq': [xx for x in Path('/data/OpenOmics/dev').iterdir() if x.is_dir() and check_access(x, R_OK) 
+        'seq': [xx for x in Path('/data/RTB_GRS/dev').iterdir() if x.is_dir() and check_access(x, R_OK) 
                 for xx in x.iterdir() if xx.is_dir() and check_access(xx, R_OK) and Path(xx, 'RTAComplete.txt').exists()],
         'profile': Path(__file__, '..', '..', 'profiles').resolve()
     }

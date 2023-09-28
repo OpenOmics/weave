@@ -8,15 +8,17 @@ import json
 import tempfile
 import os
 import yaml
+from os import access as check_access, W_OK
 from argparse import ArgumentTypeError
 from Dmux.config import DIRECTORY_CONFIGS, SNAKEFILE, PROFILE, get_current_server
+from Dmux.modules import get_demux_mods, init_demux_mods, close_demux_mods
 from dateutil.parser import parse as date_parser
 from subprocess import Popen, PIPE
 from tempfile import TemporaryDirectory
 from pathlib import Path, PurePath
 
 
-DEFAULT_CONFIG_KEYS = ('runs', 'run_ids', 'projects', 'sids', 'snums', 'rnums')
+DEFAULT_CONFIG_KEYS = ('runs', 'run_ids', 'projects', 'sids', 'snums', 'rnums', 'out_to')
 
 
 class esc_colors:
@@ -95,8 +97,18 @@ def valid_run_input(run):
     return valid_run
 
 
+def valid_run_output(output_directory):
+    output_directory = Path(output_directory).resolve()
+
+    if not output_directory.exists():
+        output_directory.mkdir(parents=True, mode=0o765)
+    if not check_access(output_directory, W_OK):
+        raise PermissionError(f'Can not write to output directory {output_directory}')
+    return output_directory
+
 def exec_demux_pipeline(configs):
     global PROFILE, SNAKEFILE
+    init_demux_mods()
     snake_file = SNAKEFILE['FASTQ']
     fastq_demux_profile = PROFILE[get_current_server()]
     profile_config = {}
@@ -110,19 +122,16 @@ def exec_demux_pipeline(configs):
         with Path('~').expanduser() as tmpdirname:
             config_file = Path(tmpdirname, 'config.json').resolve()
             json.dump(this_config, open(config_file, 'w'), cls=PathJSONEncoder, indent=4)
-            doutput = Path(this_config['runs'], 'demux')
-            doutput.mkdir(exist_ok=True, parents=True, mode=755)
             top_env = os.environ.copy()
-            top_env['SMK_CONFIG'] = str(config_file)
-            top_env['MODS_TO_LOAD'] = 'bcl2fastq'
-            this_cmd = "snakemake " + \
-                       f"-use-singularity --singularity-args \"-B {this_config['runs']}:/work/in:rw,{str(doutput)}:/work/out:rw\" " + \
-                       f"-s {snake_file} " + \
-                       f"--profile {fastq_demux_profile}"
-            import ipdb; ipdb.set_trace()
-            this_out, this_err = Popen(this_cmd, env=top_env)
+            top_env['SMK_CONFIG'] = str(config_file.resolve())
+            top_env['LOAD_MODULES'] = get_demux_mods()
+            this_cmd = ["snakemake", "--use-singularity", "--singularity-args", \
+                       f"\"-B {this_config['runs']}:/work/in:rw,{str(this_config['out_to'])}:/work/out:rw\"", \
+                       "-s", f"{snake_file}", "--profile", f"{fastq_demux_profile}"]
+            print(f"{esc_colors.OKGREEN} >{esc_colors.ENDC} Executing demultiplexing of run {esc_colors.BOLD}{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
+            proc = Popen(this_cmd, env=top_env)
 
-    pass
+    close_demux_mods()
 
 
 def base_config():

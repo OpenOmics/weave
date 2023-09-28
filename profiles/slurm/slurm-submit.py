@@ -90,6 +90,7 @@ if "account" in sbatch_options:
     del sbatch_options['account']
 
 if 'partition' not in sbatch_options:
+    # TODO bigsky support
     sbatch_options['account'] = 'norm*'
 
 # submit job and echo id back to Snakemake (must be the only stdout)

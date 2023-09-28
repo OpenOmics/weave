@@ -190,20 +190,13 @@ def format_sbatch_options(**sbatch_options):
 
 
 def format_modules(jobscript):
-    if 'MODS_TO_LOAD' not in os.environ:
+    if 'LOAD_MODULES' not in os.environ:
         return jobscript
         
-    host = get_current_server()
-    module_script = []
-    if host == 'bigsky':
-        mod = 'spack'
-    else:
-        module_script.append("module purge\n")
-        mod = 'module'
-    to_load = os.environ['MODS_TO_LOAD']
-    module_script.append(f"{mod} load {' '.join(to_load.split(';'))}\n")
+    module_script = "\n".join([x.strip() for x in os.environ['LOAD_MODULES'].split(';')]) + "\n"
     current_jobscript = open(jobscript).readlines()
-    jb = current_jobscript[0:2] + module_script +  current_jobscript[2:]
+    jb = current_jobscript[0:2] + [module_script] +  current_jobscript[2:]
+    
     with open(jobscript, 'w') as fo:
         fo.writelines(jb)
     return jobscript
@@ -215,7 +208,6 @@ def submit_job(jobscript, **sbatch_options):
     jobscript = format_modules(jobscript)
     try:
         cmd = ["sbatch"] + ["--parsable"] + options + [jobscript]
-        import os; os.system(f'cp {jobscript} ~/jb_tmp.sh')
         res = sp.check_output(cmd)
     except sp.CalledProcessError as e:
         raise e
