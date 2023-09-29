@@ -8,8 +8,8 @@ max-jobs-per-second: "10"
 max-status-checks-per-second: "10"
 local-cores: 1
 latency-wait: "120"
-use-conda: "False"
-use-singularity: "True"
+use-conda: False
+use-singularity: True
 jobs: "1"
 printshellcmds: "True"
 set-resources:

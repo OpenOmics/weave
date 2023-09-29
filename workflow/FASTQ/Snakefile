@@ -26,13 +26,14 @@ rule all:
 
 rule bcl2fastq:
 	input:
-		run_dirs = expand("{run}", run=config['runs']),
-		samplesheets = expand("{run}/SampleSheet.csv", run=config['runs'])
+		run_dirs 		  	= expand("{run}", run=config['runs']),
+		binary_base_calls	= expand("{files}", files=config['bcl_files']),
+		samplesheets 	  	= expand("{run}/SampleSheet.csv", run=config['runs'])
 	output:
-		out_dir		= expand("{run}/{project}", **demux_runs_projects),
-		seq_data 	= expand("{run}/{project}/{sids}_S{snum}_R{rnum}.fastq.gz", **demux_full_params),
-		reports 	= expand("{run}/{project}/Reports", **demux_runs_projects),
-		stats		= expand("{run}/{project}/Stats", **demux_runs_projects)
+		out_dir			  	= expand("{run}/{project}", **demux_runs_projects),
+		seq_data 			= expand("{run}/{project}/{sids}_S{snum}_R{rnum}.fastq.gz", **demux_full_params),
+		reports 			= expand("{run}/{project}/Reports", **demux_runs_projects),
+		stats				= expand("{run}/{project}/Stats", **demux_runs_projects)
 	singularity: "docker://umccr/bcl2fastq"
 	threads: 24
 	shell: 

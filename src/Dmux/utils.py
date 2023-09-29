@@ -18,7 +18,7 @@ from tempfile import TemporaryDirectory
 from pathlib import Path, PurePath
 
 
-DEFAULT_CONFIG_KEYS = ('runs', 'run_ids', 'projects', 'sids', 'snums', 'rnums', 'out_to')
+DEFAULT_CONFIG_KEYS = ('runs', 'run_ids', 'projects', 'sids', 'snums', 'rnums', 'out_to', 'bcl_files')
 
 
 class esc_colors:
@@ -106,9 +106,10 @@ def valid_run_output(output_directory):
         raise PermissionError(f'Can not write to output directory {output_directory}')
     return output_directory
 
-def exec_demux_pipeline(configs):
+def exec_demux_pipeline(configs, dry_run=False):
     global PROFILE, SNAKEFILE
-    init_demux_mods()
+    init_mods = init_demux_mods()
+    assert init_mods, f"Failed to initialize modules: {get_demux_mods()}"
     snake_file = SNAKEFILE['FASTQ']
     fastq_demux_profile = PROFILE[get_current_server()]
     profile_config = {}
@@ -128,6 +129,8 @@ def exec_demux_pipeline(configs):
             this_cmd = ["snakemake", "--use-singularity", "--singularity-args", \
                        f"\"-B {this_config['runs']}:/work/in:rw,{str(this_config['out_to'])}:/work/out:rw\"", \
                        "-s", f"{snake_file}", "--profile", f"{fastq_demux_profile}"]
+            if dry_run:
+                this_cmd.append('--dry-run')
             print(f"{esc_colors.OKGREEN} >{esc_colors.ENDC} Executing demultiplexing of run {esc_colors.BOLD}{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
             proc = Popen(this_cmd, env=top_env)
 
