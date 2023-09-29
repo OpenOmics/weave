@@ -30,17 +30,18 @@ rule bcl2fastq:
 		binary_base_calls	= expand("{files}", files=config['bcl_files']),
 		samplesheets 	  	= expand("{run}/SampleSheet.csv", run=config['runs'])
 	output:
-		out_dir			  	= expand("{run}/{project}", **demux_runs_projects),
 		seq_data 			= expand("{run}/{project}/{sids}_S{snum}_R{rnum}.fastq.gz", **demux_full_params),
 		reports 			= expand("{run}/{project}/Reports", **demux_runs_projects),
 		stats				= expand("{run}/{project}/Stats", **demux_runs_projects)
+	params:
+		out_dir			  	= expand("{run}/{project}", **demux_runs_projects),
 	singularity: "docker://umccr/bcl2fastq"
 	threads: 24
 	shell: 
 		r"""
 			bcl2fastq \
-			--runfolder-dir /work/in \
+			--runfolder-dir {input.run_dirs} \
 			--min-log-level=INFO \
 			-r {threads} -p {threads} -w {threads} \
-			--no-lane-splitting -o /work/out
+			--no-lane-splitting -o {params.out_dir}
 		"""

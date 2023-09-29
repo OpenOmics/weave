@@ -18,12 +18,12 @@ set-resources:
     time: 360
     ntasks: 1
     mem_mb: 16000
-    disk_mb: 5_000_000
-    disk_mib: 5_000_000
+    disk_mb: 1_000_000
+    disk_mib: 1_000_000
   bcl2fastq:
     mem_mb: 32000
     threads: 24
     partition: "quick"
-    disk_mb: 5_000_000
-    disk_mib: 5_000_000
+    disk_mb: 1_000_000
+    disk_mib: 1_000_000
     

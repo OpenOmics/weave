@@ -17,11 +17,9 @@ use-singularity: True
 singularity-args: " --cleanenv"
 set-resources:
   __default__:
-    partition: "norm*"
-    time: 360
     ntasks: 1
     mem_mb: 16000
   bcl2fastq:
     mem_mb: 32000
     threads: 24
-    partition: "quick"
+    disk_mb: 1_000

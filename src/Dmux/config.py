@@ -62,8 +62,8 @@ SNAKEFILE = {
 }
 PROFILE = {
     # TODO: 'locus': 
-    'biowulf': Path(__file__, '../../..', 'profiles', 'biowulf').resolve(),
-    'bigsky': Path(__file__, '../../..', 'profiles', 'slurm').resolve(),
+    'biowulf': Path(Path(__file__).parent, 'profiles', 'biowulf').resolve(),
+    'bigsky': Path(Path(__file__).parent, 'profiles', 'slurm').resolve(),
 }
 
 
