@@ -57,8 +57,7 @@ LABKEY_COLUMNS = {
 
 # ~~~ snakemake configurations ~~~ 
 SNAKEFILE = {
-    'FASTQ': Path(__file__, '../../..', 'workflow', 'FASTQ', 'Snakefile').resolve(),
-    'NGS_QC': Path(__file__, '../../..', 'workflow', 'NGS_QC', 'Snakefile').resolve(),
+    'Illumnia': Path(__file__, '../../..', 'workflow', 'illumina', 'Snakefile').resolve(),
 }
 PROFILE = {
     # TODO: 'locus': 

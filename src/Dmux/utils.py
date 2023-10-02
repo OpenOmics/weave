@@ -92,25 +92,30 @@ def valid_run_input(run):
         raise ArgumentTypeError(f"Sequencing run {esc_colors.BOLD}\"{run}\"{esc_colors.ENDC} does not exist on server {esc_colors.BOLD}\"{host}\"{esc_colors.ENDC}")
     
     if not Path(run, 'SampleSheet.csv'):
-        raise ArgumentTypeError(f"Sequencing run {esc_colors.BOLD}\"{run}\"{esc_colors.ENDC} is missing a sample sheet located at : {Path(run, 'SampleSheet.csv')}")    
+        raise ArgumentTypeError(f"Sequencing run {esc_colors.BOLD}\"{run}\"{esc_colors.ENDC} is missing a sample sheet located at: {Path(run, 'SampleSheet.csv')}")    
         
     return valid_run
 
 
 def valid_run_output(output_directory):
     output_directory = Path(output_directory).resolve()
-
     if not output_directory.exists():
         output_directory.mkdir(parents=True, mode=0o765)
+    else:
+        raise FileExistsError(f'Output directory, {output_directory} exists already. Select alternative or delete existing.')
     if not check_access(output_directory, W_OK):
         raise PermissionError(f'Can not write to output directory {output_directory}')
     return output_directory
+
 
 def exec_demux_pipeline(configs, dry_run=False):
     global PROFILE, SNAKEFILE
     init_mods = init_demux_mods()
     assert init_mods, f"Failed to initialize modules: {get_demux_mods()}"
-    snake_file = SNAKEFILE['FASTQ']
+    # TODO: when or if other instrument profiles are needed, we will need to expand this portion to 
+    #       determine instrument type/brand by some method.
+    this_instrument = 'Illumnia'
+    snake_file = SNAKEFILE[this_instrument]
     fastq_demux_profile = PROFILE[get_current_server()]
     profile_config = {}
     if Path(fastq_demux_profile, 'config.yaml').exists():
@@ -119,20 +124,32 @@ def exec_demux_pipeline(configs, dry_run=False):
     for i in range(0, len(configs['projects'])):
         this_config = {k: v[i] for k, v in configs.items()}
         this_config.update(profile_config)
-        # with tempfile.TemporaryDirectory() as tmpdirname:
-        with Path('~').expanduser() as tmpdirname:
+        with tempfile.TemporaryDirectory(dir=Path('~').expanduser()) as tmpdirname:
             config_file = Path(tmpdirname, 'config.json').resolve()
             json.dump(this_config, open(config_file, 'w'), cls=PathJSONEncoder, indent=4)
+            os.system(f'cp {config_file} ~/config.json')
             top_env = os.environ.copy()
             top_env['SMK_CONFIG'] = str(config_file.resolve())
             top_env['LOAD_MODULES'] = get_demux_mods()
             this_cmd = ["snakemake", "--use-singularity", "--singularity-args", \
-                       f"\"-B {this_config['runs']}:/work/in:rw,{str(this_config['out_to'])}:/work/out:rw\"", \
+                       f"\"-B {this_config['runs']},{str(this_config['out_to'])}\"", \
                        "-s", f"{snake_file}", "--profile", f"{fastq_demux_profile}"]
             if dry_run:
                 this_cmd.append('--dry-run')
             print(f"{esc_colors.OKGREEN} >{esc_colors.ENDC} Executing demultiplexing of run {esc_colors.BOLD}{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
-            proc = Popen(this_cmd, env=top_env)
+            proc = Popen(this_cmd, env=top_env, stdout=PIPE, stderr=PIPE)
+            out, err = proc.communicate()
+            if err:
+                raise ChildProcessError(f'Snakemake failed to execute:\n~~~~\n\n' + err.decode('utf-8'))
+            if out:
+                # Submitted job 1 with external jobid '9494042'.
+                jid_re = r"Submitted job (\d{1,3}) external jobid '(\d{7})'"
+                for out_msg in out.decode('utf-8'): 
+                    out_find = re.search(jid_re, out_msg)
+                    if out_find.groups():
+                        for internal_jid, external_jid in out_find.groups():
+                            print(f"\t LOCAL JOB: {internal_jid} SLURM JOB ID: {external_jid}")
+
 
     close_demux_mods()
 

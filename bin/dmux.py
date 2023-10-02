@@ -33,6 +33,7 @@ def run(args):
 
 
 def ngs_qc(args):
+    # kraken, kiaju, fastp, fastqscreen, fastqc, multiqc
     pass
 
 
@@ -51,6 +52,8 @@ if __name__ == '__main__':
     parser_run.add_argument('rundir', metavar='Run directory', nargs="+", type=utils.valid_run_input, help='Full & complete run id, no wildcards or regex (format YYMMDD_INSTRUMENTID_TIME_FLOWCELLID)')
     parser_run.add_argument('-o', '--output', metavar='Output top directory', default=None, type=str)
     parser_run.add_argument('-p', '--pretend', action='store_true')
+    # add non-default samplesheet names
+    # add in flag for running disabling qc
     parser_run.set_defaults(func = run)
 
     parser_logs = sub_parsers.add_parser('logs', help='logs subcommand help')
