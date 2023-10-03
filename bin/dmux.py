@@ -21,14 +21,16 @@ def run(args):
         config['runs'].append(rundir)
         config['run_ids'].append(rundir.name)
         config['projects'].append(list(set([_sample.Sample_Project for _sample in sample_sheet.samples])))
-        config['sids'].append([_sample['Sample_ID'] for _sample in sample_sheet.samples])
-        config['snums'].append([str(i) for i in range(1, len(sample_sheet.samples)+1)])
-        config['rnums'].append(['1', '2'] if sample_sheet.is_paired_end else ['1'])
+        pairs = ['1', '2'] if sample_sheet.is_paired_end else ['1']
+        config['reads_out'].append(
+            [f'{_sample.Sample_ID}_S{str(i)}_R{pair}_001.fastq.gz' for i, _sample in enumerate(sample_sheet.samples) for pair in pairs]
+        )
+        config['rnums'].append(pairs)
         config['bcl_files'].append(list(Path(rundir).rglob('*.bcl.*')))
         out_to = Path(args.output, f"{sample_sheet.Header['Experiment Name']}_demux") if args.output else Path(rundir, f"{sample_sheet.Header['Experiment Name']}_demux")
         utils.valid_run_output(out_to)
         config['out_to'].append(out_to)
-        
+
     utils.exec_demux_pipeline(config)
 
 

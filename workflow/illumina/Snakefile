@@ -4,28 +4,24 @@ import os
 
 configfile: os.environ['SMK_CONFIG']
 
+
 demux_runs_projects = {
 	'run': config['runs'],
 	'project': config['projects'],
 	'out_to': config['out_to'],
-	'run_ids': config['run_ids']
+	'run_ids': config['run_ids'],
+	'rnums': config['rnums'],
+	'reads_out': config['reads_out']
 }
-
-
-demux_full_params = {
-	'sids': config['sids'], 
-	'snum': config['snums'], 
-	'rnum': config['rnums'],
-}
-demux_full_params.update(demux_runs_projects)
+path_resolve = lambda x: os.path.abspath(os.path.expanduser(os.path.expandvars(str(x))))
 
 
 rule all:
 	input:
 		expand("{run}", run=config['runs']),
-		expand("{out_to}/{run_ids}/{project}/Reports", **demux_runs_projects),
-		expand("{out_to}/{run_ids}/{project}/Stats", **demux_runs_projects),
-		expand("{out_to}/{run_ids}/{project}/{sids}_S{snum}_R{rnum}_001.fastq.gz", **demux_full_params),
+		expand("{out_to}/{project}/Reports", **demux_runs_projects),
+		expand("{out_to}/{project}/Stats", **demux_runs_projects),
+		expand("{out_to}/{project}/{reads_out}", **demux_runs_projects),
 
 
 rule bcl2fastq:
@@ -34,9 +30,10 @@ rule bcl2fastq:
 		binary_base_calls	= expand("{files}", files=config['bcl_files']),
 		samplesheets 	  	= expand("{run}/SampleSheet.csv", run=config['runs'])
 	output:
-		seq_data 			= expand("{out_to}/{run_ids}/{project}/{sids}_S{snum}_R{rnum}_001.fastq.gz", **demux_full_params),
-		reports 			= expand("{out_to}/{run_ids}/{project}/Reports", **demux_runs_projects),
-		stats				= expand("{out_to}/{run_ids}/{project}/Stats", **demux_runs_projects)
+		seq_data 			= expand("{out_to}/{project}/{reads_out}", **demux_runs_projects),
+		undetermined		= expand(path_resolve(os.path.join("{out_to}", "..", "Undetermined_S0_R{rnums}_001.fastq.gz")), **demux_runs_projects),
+		reports 			= expand("{out_to}/{project}/Reports", **demux_runs_projects),
+		stats				= expand("{out_to}/{project}/Stats", **demux_runs_projects)
 	params:
 		out_dir			  	= expand("{out_to_directory}", out_to_directory=config['out_to']),
 	singularity: "docker://umccr/bcl2fastq"

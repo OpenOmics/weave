@@ -8,6 +8,8 @@ import json
 import tempfile
 import os
 import yaml
+import sys
+from threading import Thread
 from os import access as check_access, W_OK
 from argparse import ArgumentTypeError
 from Dmux.config import DIRECTORY_CONFIGS, SNAKEFILE, PROFILE, get_current_server
@@ -18,7 +20,7 @@ from tempfile import TemporaryDirectory
 from pathlib import Path, PurePath
 
 
-DEFAULT_CONFIG_KEYS = ('runs', 'run_ids', 'projects', 'sids', 'snums', 'rnums', 'out_to', 'bcl_files')
+DEFAULT_CONFIG_KEYS = ('runs', 'run_ids', 'projects', 'reads_out', 'out_to', 'rnums', 'bcl_files')
 
 
 class esc_colors:
@@ -108,11 +110,51 @@ def valid_run_output(output_directory):
     return output_directory
 
 
+def exec_snakemake(on_exit, popen_cmd, env=None):
+    """
+    Runs the given args in a subprocess.Popen, and then calls the function
+    on_exit when the subprocess completes.
+    on_exit is a callable object, and popen_args is a list/tuple of args that 
+    would give to subprocess.Popen.
+    """
+    def run_in_thread(on_exit, popen_cmd, env=None):
+        if env:
+            proc = Popen(popen_cmd, stderr=PIPE, stdout=PIPE, env=env)
+        else:
+            proc = Popen(popen_cmd, stderr=PIPE, stdout=PIPE)
+
+        while True:
+            output = proc.stdout.readline()
+            if proc.poll() is not None:
+                break
+            if output:
+                this_output = output.strip().decode('utf-8')
+                jid_re = r"Submitted job (\d{1,3}) external jobid '(\d{7})'"
+                out_find = re.search(jid_re, this_output)
+                if out_find.groups():
+                    for internal_jid, external_jid in out_find.groups():
+                        sys.stdout.write(f"\tWORKFLOW JOB: {internal_jid} SLURM JOB ID: {external_jid}")
+                    break
+        on_exit(*proc.communicate())
+        return
+    thread = Thread(target=run_in_thread, args=(on_exit, popen_cmd, env))
+    thread.daemon = True
+    thread.start()
+    # returns immediately after the thread starts
+    return thread
+
+
+def snakemake_process_exit_hook(std_out, std_err):
+    if std_err:
+        raise ChildProcessError(f'Snakemake failed to execute:\n\n' + esc_colors.FAIL + std_err.strip().decode('utf-8') + esc_colors.ENDC)
+    return
+
+
 def exec_demux_pipeline(configs, dry_run=False):
-    global PROFILE, SNAKEFILE
     init_mods = init_demux_mods()
     assert init_mods, f"Failed to initialize modules: {get_demux_mods()}"
-    # TODO: when or if other instrument profiles are needed, we will need to expand this portion to 
+    # TODO: when or if other instrument profiles are needed, 
+    #       we will need to expand this portion to 
     #       determine instrument type/brand by some method.
     this_instrument = 'Illumnia'
     snake_file = SNAKEFILE[this_instrument]
@@ -121,41 +163,56 @@ def exec_demux_pipeline(configs, dry_run=False):
     if Path(fastq_demux_profile, 'config.yaml').exists():
         profile_config.update(yaml.safe_load(open(Path(fastq_demux_profile, 'config.yaml'))))
 
+    top_output_dir = Path(configs['out_to'][0], '..', '.singularity').resolve()
+    top_config_dir = Path(configs['out_to'][0], '..', '.config').resolve()
+    if not top_output_dir.exists():
+        top_output_dir.mkdir(mode=0o755, parents=True, exist_ok=True)
+    if not top_config_dir.exists():
+        top_config_dir.mkdir(mode=0o755, parents=True, exist_ok=True)
+
     for i in range(0, len(configs['projects'])):
         this_config = {k: v[i] for k, v in configs.items()}
         this_config.update(profile_config)
-        with tempfile.TemporaryDirectory(dir=Path('~').expanduser()) as tmpdirname:
-            config_file = Path(tmpdirname, 'config.json').resolve()
-            json.dump(this_config, open(config_file, 'w'), cls=PathJSONEncoder, indent=4)
-            os.system(f'cp {config_file} ~/config.json')
-            top_env = os.environ.copy()
-            top_env['SMK_CONFIG'] = str(config_file.resolve())
-            top_env['LOAD_MODULES'] = get_demux_mods()
-            this_cmd = ["snakemake", "--use-singularity", "--singularity-args", \
-                       f"\"-B {this_config['runs']},{str(this_config['out_to'])}\"", \
-                       "-s", f"{snake_file}", "--profile", f"{fastq_demux_profile}"]
-            if dry_run:
-                this_cmd.append('--dry-run')
-            print(f"{esc_colors.OKGREEN} >{esc_colors.ENDC} Executing demultiplexing of run {esc_colors.BOLD}{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
-            proc = Popen(this_cmd, env=top_env, stdout=PIPE, stderr=PIPE)
-            out, err = proc.communicate()
-            if err:
-                raise ChildProcessError(f'Snakemake failed to execute:\n~~~~\n\n' + err.decode('utf-8'))
-            if out:
-                # Submitted job 1 with external jobid '9494042'.
-                jid_re = r"Submitted job (\d{1,3}) external jobid '(\d{7})'"
-                for out_msg in out.decode('utf-8'): 
-                    out_find = re.search(jid_re, out_msg)
-                    if out_find.groups():
-                        for internal_jid, external_jid in out_find.groups():
-                            print(f"\t LOCAL JOB: {internal_jid} SLURM JOB ID: {external_jid}")
+        
+        config_file = Path(top_config_dir, f'config_job_{str(i)}.json').resolve()
+        json.dump(this_config, open(config_file, 'w'), cls=PathJSONEncoder, indent=4)
+        top_env = os.environ.copy()
+        top_env['SMK_CONFIG'] = str(config_file.resolve())
+        top_env['LOAD_MODULES'] = get_demux_mods()
+        top_env['SINGULARITY_CACHEDIR'] = str(top_output_dir)
+        this_cmd = ["snakemake", "--use-singularity", "--singularity-args", \
+                    f"\"-B {this_config['runs']},{str(this_config['out_to'])}\"", \
+                    "-s", f"{snake_file}", "--profile", f"{fastq_demux_profile}"]
 
+        print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC} Executing demultiplexing of run {esc_colors.BOLD}{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
+        
 
+        # if dry_run: 
+        #     this_cmd.append('--dry-run')
+        #     Popen(this_cmd, stderr=PIPE, stdout=PIPE, env=top_env)
+        # else:
+        #     exec_snakemake(snakemake_process_exit_hook, this_cmd, top_env)
+
+        proc = Popen(this_cmd, stderr=PIPE, env=top_env)
+        while True:
+            output = proc.stderr.readline()
+            if output:
+                this_output = output.strip().decode('utf-8')
+                jid_re = r"Submitted job (\d{1,}) with external jobid '(\d{7,})'"
+                out_find = re.search(jid_re, this_output)
+                if out_find is not None:
+                    internal_jid, external_jid = out_find.groups()
+                    job_msg = f"\t> {esc_colors.OKGREEN}Snakemake{esc_colors.ENDC} job_id: {internal_jid}, {esc_colors.OKGREEN}slurm{esc_colors.ENDC} job id: {external_jid}"
+                    print(job_msg)
+                    break
+            if proc.poll() is not None:
+                continue
+                    
+        
     close_demux_mods()
 
 
 def base_config():
-    global DEFAULT_CONFIG_KEYS
     this_config = {}
     for elem_key in DEFAULT_CONFIG_KEYS:
         this_config[elem_key] = []
