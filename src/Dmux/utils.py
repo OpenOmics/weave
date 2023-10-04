@@ -163,7 +163,6 @@ def exec_demux_pipeline(configs, dry_run=False):
     for i in range(0, len(configs['projects'])):
         this_config = {k: v[i] for k, v in configs.items()}
         this_config.update(profile_config)
-        
         config_file = Path(top_config_dir, f'config_job_{str(i)}.json').resolve()
         json.dump(this_config, open(config_file, 'w'), cls=PathJSONEncoder, indent=4)
         top_env = os.environ.copy()
@@ -173,13 +172,14 @@ def exec_demux_pipeline(configs, dry_run=False):
         this_cmd = ["snakemake", "--use-singularity", "--singularity-args", \
                     f"\"-B {this_config['runs']},{str(this_config['out_to'])}\"", \
                     "-s", f"{snake_file}", "--profile", f"{fastq_demux_profile}"]
-
-        print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC} Executing demultiplexing of run {esc_colors.BOLD}{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
-        
-        if dry_run: 
-            this_cmd.append('--dry-run', '-p')
-            Popen(this_cmd, env=top_env)
+        if dry_run:
+            print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC} {esc_colors.UNDERLINE}Dry run{esc_colors.ENDC} demultiplexing of run {esc_colors.BOLD}{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
+            time.sleep(0.5)
+            this_cmd.extend(['--dry-run', '-p'])
+            proc = Popen(this_cmd, env=top_env)
+            proc.communicate()
         else:
+            print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC} Executing demultiplexing of run {esc_colors.BOLD}{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
             exec_snakemake(this_cmd, top_env)
                
         

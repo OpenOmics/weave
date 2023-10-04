@@ -31,7 +31,7 @@ def run(args):
         utils.valid_run_output(out_to)
         config['out_to'].append(out_to)
 
-    utils.exec_demux_pipeline(config)
+    utils.exec_demux_pipeline(config, dry_run=args.pretend)
 
 
 def ngs_qc(args):
