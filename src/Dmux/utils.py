@@ -12,7 +12,7 @@ import time
 from threading import Thread
 from os import access as check_access, W_OK
 from argparse import ArgumentTypeError
-from Dmux.config import DIRECTORY_CONFIGS, SNAKEFILE, PROFILE, get_current_server
+from Dmux.config import DIRECTORY_CONFIGS, SNAKEFILE, get_current_server
 from Dmux.modules import get_demux_mods, init_demux_mods, close_demux_mods
 from dateutil.parser import parse as date_parser
 from subprocess import Popen, PIPE
@@ -148,7 +148,7 @@ def exec_demux_pipeline(configs, dry_run=False):
     #       determine instrument type/brand by some method.
     this_instrument = 'Illumnia'
     snake_file = SNAKEFILE[this_instrument]
-    fastq_demux_profile = PROFILE[get_current_server()]
+    fastq_demux_profile = DIRECTORY_CONFIGS[get_current_server()]['profile']
     profile_config = {}
     if Path(fastq_demux_profile, 'config.yaml').exists():
         profile_config.update(yaml.safe_load(open(Path(fastq_demux_profile, 'config.yaml'))))

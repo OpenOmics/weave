@@ -59,12 +59,6 @@ LABKEY_COLUMNS = {
 SNAKEFILE = {
     'Illumnia': Path(__file__, '../../..', 'workflow', 'illumina', 'Snakefile').resolve(),
 }
-PROFILE = {
-    # TODO: 'locus': 
-    'biowulf': Path(Path(__file__).parent, 'profiles', 'biowulf').resolve(),
-    'bigsky': Path(Path(__file__).parent, 'profiles', 'slurm').resolve(),
-}
-
 
 # ~~~ directory configurations ~~~ 
 def get_biowulf_seq_dirs():
@@ -92,13 +86,11 @@ def get_locus_seq_dirs():
 DIRECTORY_CONFIGS = {
     'bigsky': {
         'seq': get_bigsky_seq_dirs(),
-        'profile': Path(__file__, '..', '..', 'profiles').resolve()
+        'profile': Path(Path(__file__).parent, 'profiles', 'slurm').resolve(),
     },
     'biowulf': {
-        #'seq': get_biowulf_seq_dirs()
-        'seq': [xx for x in Path('/data/RTB_GRS/dev').iterdir() if x.is_dir() and check_access(x, R_OK) 
-                for xx in x.iterdir() if xx.is_dir() and check_access(xx, R_OK) and Path(xx, 'RTAComplete.txt').exists()],
-        'profile': Path(__file__, '..', '..', 'profiles').resolve()
+        'seq': get_biowulf_seq_dirs(),
+        'profile': Path(Path(__file__).parent, 'profiles', 'biowulf').resolve(),
     }
     # TODO: locus
 }
