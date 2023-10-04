@@ -127,7 +127,7 @@ def exec_snakemake(popen_cmd, env=None):
             out_find = re.search(jid_re, this_output)
             if out_find is not None:
                 internal_jid, external_jid = out_find.groups()
-                job_msg = f"\t> {esc_colors.OKGREEN}Snakemake{esc_colors.ENDC} job id: {internal_jid}, {esc_colors.OKGREEN}slurm{esc_colors.ENDC} job id: {external_jid}"
+                job_msg = f"\t- {esc_colors.OKGREEN}Snakemake{esc_colors.ENDC} job id: {internal_jid}, {esc_colors.OKGREEN}slurm{esc_colors.ENDC} job id: {external_jid}"
                 print(job_msg)
                 break
         if _poll is not None:

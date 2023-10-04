@@ -20,10 +20,9 @@ rule all:
 	input:
 		# ~~ illumnia demultiplexing ~~
 		expand("{run}", run=config['runs']),
-		expand("{out_to}/Reports", out_to=config['out_to']),
-		expand("{out_to}/Stats", out_to=config['out_to']),
 		expand("{out_to}/{project}/{reads_out}", **demux_runs_projects),
-
+		expand("{out_to}/Stats/Stats.json", **demux_runs_projects)
+		
 
 rule bcl2fastq:
 	"""
@@ -38,8 +37,7 @@ rule bcl2fastq:
 	output:
 		seq_data 			= expand("{out_to}/{project}/{reads_out}", **demux_runs_projects),
 		undetermined		= expand("{out_to}/Undetermined_S0_R{rnums}_001.fastq.gz", **demux_runs_projects),
-		reports 			= expand("{out_to}/Reports", **demux_runs_projects),
-		stats				= expand("{out_to}/Stats", **demux_runs_projects)
+		stats				= expand("{out_to}/Stats/Stats.json", **demux_runs_projects)
 	params:
 		out_dir			  	= expand("{out_to_directory}", out_to_directory=config['out_to']),
 	singularity: "docker://umccr/bcl2fastq"
