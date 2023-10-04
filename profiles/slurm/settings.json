@@ -1,0 +1,5 @@
+{
+    "SBATCH_DEFAULTS": "--mail-type=ALL ",
+    "CLUSTER_NAME": "",
+    "CLUSTER_CONFIG": ""
+}

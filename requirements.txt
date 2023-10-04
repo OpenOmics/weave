@@ -5,4 +5,5 @@ labkey
 docxtpl
 pandas
 sample-sheet
+wheel
 snakemake
