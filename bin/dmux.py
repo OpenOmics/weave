@@ -16,7 +16,6 @@ def run(args):
     config = utils.base_config()
  
     for (rundir, run_infos) in runs:
-        import ipdb; ipdb.set_trace()
         sample_sheet = run_infos['samplesheet']
         config['runs'].append(rundir)
         config['run_ids'].append(rundir.name)
