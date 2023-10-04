@@ -9,6 +9,8 @@ import os
 import yaml
 import sys
 import time
+import xml.etree.ElementTree as ET
+from Dmux.files import parse_samplesheet
 from threading import Thread
 from os import access as check_access, W_OK
 from argparse import ArgumentTypeError
@@ -77,29 +79,61 @@ def valid_runid(id_to_check):
 
     return id_to_check
 
-
 def valid_run_input(run):
-    host = get_current_server()
-    seq_dirs = DIRECTORY_CONFIGS[host]['seq']
-
-    valid_run = None
-    if Path(run).exists():
-        # this is a full pathrun directory
-        valid_run = Path(run).resolve()
-    elif run in list(map(lambda d: d.name, seq_dirs)):
-        for _r in seq_dirs:
-            if run == _r.name:
-                valid_run = _r.resolve()
-    else:
-        raise ArgumentTypeError(f"Sequencing run {esc_colors.BOLD}\"{run}\"{esc_colors.ENDC} does not exist on server {esc_colors.BOLD}\"{host}\"{esc_colors.ENDC}")
+    regex_run_id = r"(\d{6})_([A-Z]{2}\d{6})_(\d{4})_([A-Z]{10})"
+    match_id = re.search(regex_run_id, run, re.MULTILINE)
+    if match_id:
+        return run
     
-    if not Path(run, 'SampleSheet.csv'):
-        raise ArgumentTypeError(f"Sequencing run {esc_colors.BOLD}\"{run}\"{esc_colors.ENDC} is missing a sample sheet located at: {Path(run, 'SampleSheet.csv')}")    
-        
-    return valid_run
+    if Path(run).exists():
+        run = Path(run).resolve()
+        return run
+    
+    raise ArgumentTypeError("Invalid run value, neither an id or existing path: " + str(run)) 
 
 
-def valid_run_output(output_directory):
+def get_run_directories(runids, seq_dir=None):
+    host = get_current_server()
+    seq_dirs = Path(seq_dir).resolve() if seq_dir else DIRECTORY_CONFIGS[host]['seq'] 
+    
+    run_paths, invalid_runs  = [], []
+    run_return = []
+    for run in runids:
+        if Path(run).exists():
+            # this is a full pathrun directory
+            run_paths.append(Path(run).resolve())
+        elif run in list(map(lambda d: d.name, seq_dirs)):
+            for _r in seq_dirs:
+                if run == _r.name:
+                    run_paths.append(_r.resolve())
+        else:
+            invalid_runs.append(run)
+
+    for run_p in run_paths:
+        rid = run_p.name
+        this_run_info = {}
+        if Path(run_p, 'SampleSheet.csv').exists():
+            this_run_info['samplesheet'] = parse_samplesheet(Path(run_p, 'SampleSheet.csv').resolve())
+        else:
+            raise FileNotFoundError(f'Run {rid}({run_p}) does not have a sample sheet.')
+        if Path(run_p, 'RunInfo.xml').exists():
+            run_xml = ET.parse(Path(run_p, 'RunInfo.xml').resolve()).getroot()
+            this_run_info.update({info.tag: info.text for run in run_xml for info in run \
+                             if info.text is not None and info.text.strip() not in ('\n', '')})
+        else:
+            raise FileNotFoundError(f'Run {rid}({run_p}) does not have a RunInfo.xml file.')
+        run_return.append((run_p, this_run_info))
+
+    if invalid_runs:
+        raise ValueError('Runs entered are invalid (missing sequencing artifacts or directory does not exist): \n' + \
+                         ', '.join(invalid_runs))
+    
+    return run_return
+
+
+def valid_run_output(output_directory, dry_run=False):
+    if dry_run:
+        return Path(output_directory).resolve()
     output_directory = Path(output_directory).resolve()
     if not output_directory.exists():
         output_directory.mkdir(parents=True, mode=0o765)
@@ -179,7 +213,7 @@ def exec_demux_pipeline(configs, dry_run=False):
             proc = Popen(this_cmd, env=top_env)
             proc.communicate()
         else:
-            print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC} Executing demultiplexing of run {esc_colors.BOLD}{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
+            print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC}Executing demultiplexing of run{esc_colors.BOLD} {esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
             exec_snakemake(this_cmd, top_env)
                
         

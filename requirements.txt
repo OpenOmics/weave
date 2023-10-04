@@ -6,4 +6,5 @@ docxtpl
 pandas
 sample-sheet
 wheel
+docker
 snakemake
