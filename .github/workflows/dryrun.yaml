@@ -21,9 +21,9 @@ jobs:
         /opt2/bin/demux run -p /opt2/.tests/illumnia_demux -o /opt2/.tests/illumnia_demux/dry_run_out
     - name: View the pipeline config file
       run: |
-        echo "Generated config file for pipeline...." && cat $PWD/output/config.json
+        echo "Generated config file for pipeline...." && cat $PWD/.tests/illumnia_demux/dry_run_out/.config/config_job_0.json
     - name: Lint Workflow
       continue-on-error: true
       run: |
-        docker run -v $PWD:/opt2 snakemake/snakemake:stable snakemake --lint -s /opt2/output/workflow/Snakefile -d /opt2/output || \
+        docker run -v $PWD:/opt2 snakemake/snakemake:stable snakemake --lint -s /opt2/workflow/illumina/Snakefile -d /opt2/workflow/illumina || \
         echo 'There may have been a few warnings or errors. Please read through the log to determine if its harmless.'
