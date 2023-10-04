@@ -23,7 +23,7 @@ def run(args):
         config['projects'].append(list(set([_sample.Sample_Project for _sample in sample_sheet.samples])))
         pairs = ['1', '2'] if sample_sheet.is_paired_end else ['1']
         config['reads_out'].append(
-            [f'{_sample.Sample_ID}_S{str(i)}_R{pair}_001.fastq.gz' for i, _sample in enumerate(sample_sheet.samples) for pair in pairs]
+            [f'{_sample.Sample_ID}_S{str(i)}_R{pair}_001.fastq.gz' for i, _sample in enumerate(sample_sheet.samples, start=1) for pair in pairs]
         )
         config['rnums'].append(pairs)
         config['bcl_files'].append(list(Path(rundir).rglob('*.bcl.*')))

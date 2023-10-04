@@ -5,10 +5,10 @@
 # ~~~~~~~~~~~~~~~
 import re
 import json
-import tempfile
 import os
 import yaml
 import sys
+import time
 from threading import Thread
 from os import access as check_access, W_OK
 from argparse import ArgumentTypeError
@@ -110,44 +110,34 @@ def valid_run_output(output_directory):
     return output_directory
 
 
-def exec_snakemake(on_exit, popen_cmd, env=None):
-    """
-    Runs the given args in a subprocess.Popen, and then calls the function
-    on_exit when the subprocess completes.
-    on_exit is a callable object, and popen_args is a list/tuple of args that 
-    would give to subprocess.Popen.
-    """
-    def run_in_thread(on_exit, popen_cmd, env=None):
-        if env:
-            proc = Popen(popen_cmd, stderr=PIPE, stdout=PIPE, env=env)
-        else:
-            proc = Popen(popen_cmd, stderr=PIPE, stdout=PIPE)
+def exec_snakemake(popen_cmd, env=None):
+    if env is None: env = {}
 
-        while True:
-            output = proc.stdout.readline()
-            if proc.poll() is not None:
+    proc = Popen(popen_cmd, stderr=PIPE, env=env)
+    _c = 0
+    while True:
+        output = proc.stderr.readline()
+        _poll = proc.poll()
+
+        time.sleep(0.5) 
+        
+        if output:
+            this_output = output.strip().decode('utf-8')
+            jid_re = r"Submitted job (\d{1,}) with external jobid '(\d{7,})'"
+            out_find = re.search(jid_re, this_output)
+            if out_find is not None:
+                internal_jid, external_jid = out_find.groups()
+                job_msg = f"\t> {esc_colors.OKGREEN}Snakemake{esc_colors.ENDC} job id: {internal_jid}, {esc_colors.OKGREEN}slurm{esc_colors.ENDC} job id: {external_jid}"
+                print(job_msg)
                 break
-            if output:
-                this_output = output.strip().decode('utf-8')
-                jid_re = r"Submitted job (\d{1,3}) external jobid '(\d{7})'"
-                out_find = re.search(jid_re, this_output)
-                if out_find.groups():
-                    for internal_jid, external_jid in out_find.groups():
-                        sys.stdout.write(f"\tWORKFLOW JOB: {internal_jid} SLURM JOB ID: {external_jid}")
-                    break
-        on_exit(*proc.communicate())
-        return
-    thread = Thread(target=run_in_thread, args=(on_exit, popen_cmd, env))
-    thread.daemon = True
-    thread.start()
-    # returns immediately after the thread starts
-    return thread
-
-
-def snakemake_process_exit_hook(std_out, std_err):
-    if std_err:
-        raise ChildProcessError(f'Snakemake failed to execute:\n\n' + esc_colors.FAIL + std_err.strip().decode('utf-8') + esc_colors.ENDC)
-    return
+        if _poll is not None:
+            if _poll == 1:
+                raise ChildProcessError(esc_colors.FAIL + 'Snakemake execution error: \n\n' + output.decode('utf-8') + esc_colors.ENDC)
+            if _poll == 0:
+                _c += 1
+                if _c > 2: continue
+                break
+    return True
 
 
 def exec_demux_pipeline(configs, dry_run=False):
@@ -186,28 +176,12 @@ def exec_demux_pipeline(configs, dry_run=False):
 
         print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC} Executing demultiplexing of run {esc_colors.BOLD}{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
         
-
-        # if dry_run: 
-        #     this_cmd.append('--dry-run')
-        #     Popen(this_cmd, stderr=PIPE, stdout=PIPE, env=top_env)
-        # else:
-        #     exec_snakemake(snakemake_process_exit_hook, this_cmd, top_env)
-
-        proc = Popen(this_cmd, stderr=PIPE, env=top_env)
-        while True:
-            output = proc.stderr.readline()
-            if output:
-                this_output = output.strip().decode('utf-8')
-                jid_re = r"Submitted job (\d{1,}) with external jobid '(\d{7,})'"
-                out_find = re.search(jid_re, this_output)
-                if out_find is not None:
-                    internal_jid, external_jid = out_find.groups()
-                    job_msg = f"\t> {esc_colors.OKGREEN}Snakemake{esc_colors.ENDC} job_id: {internal_jid}, {esc_colors.OKGREEN}slurm{esc_colors.ENDC} job id: {external_jid}"
-                    print(job_msg)
-                    break
-            if proc.poll() is not None:
-                continue
-                    
+        if dry_run: 
+            this_cmd.append('--dry-run', '-p')
+            Popen(this_cmd, env=top_env)
+        else:
+            exec_snakemake(this_cmd, top_env)
+               
         
     close_demux_mods()
 

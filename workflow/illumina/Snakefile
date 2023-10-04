@@ -18,22 +18,28 @@ path_resolve = lambda x: os.path.abspath(os.path.expanduser(os.path.expandvars(s
 
 rule all:
 	input:
+		# ~~ illumnia demultiplexing ~~
 		expand("{run}", run=config['runs']),
-		expand("{out_to}/{project}/Reports", **demux_runs_projects),
-		expand("{out_to}/{project}/Stats", **demux_runs_projects),
+		expand("{out_to}/Reports", out_to=config['out_to']),
+		expand("{out_to}/Stats", out_to=config['out_to']),
 		expand("{out_to}/{project}/{reads_out}", **demux_runs_projects),
 
 
 rule bcl2fastq:
+	"""
+		BCL to FASTQ file converter
+		bcl2fastq v2.20.0.422
+		Copyright (c) 2007-2017 Illumina, Inc.
+	"""
 	input:
 		run_dir 		  	= expand("{run}", run=config['runs']),
 		binary_base_calls	= expand("{files}", files=config['bcl_files']),
 		samplesheets 	  	= expand("{run}/SampleSheet.csv", run=config['runs'])
 	output:
 		seq_data 			= expand("{out_to}/{project}/{reads_out}", **demux_runs_projects),
-		undetermined		= expand(path_resolve(os.path.join("{out_to}", "..", "Undetermined_S0_R{rnums}_001.fastq.gz")), **demux_runs_projects),
-		reports 			= expand("{out_to}/{project}/Reports", **demux_runs_projects),
-		stats				= expand("{out_to}/{project}/Stats", **demux_runs_projects)
+		undetermined		= expand("{out_to}/Undetermined_S0_R{rnums}_001.fastq.gz", **demux_runs_projects),
+		reports 			= expand("{out_to}/Reports", **demux_runs_projects),
+		stats				= expand("{out_to}/Stats", **demux_runs_projects)
 	params:
 		out_dir			  	= expand("{out_to_directory}", out_to_directory=config['out_to']),
 	singularity: "docker://umccr/bcl2fastq"
