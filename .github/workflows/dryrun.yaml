@@ -9,8 +9,10 @@ on:
   pull_request:
     branches_ignore: []
 
+on:
+  push:
 jobs:
-  Dry_Run_and_Lint:
+  dry_run_and_lint:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
