@@ -200,7 +200,7 @@ def exec_demux_pipeline(configs, dry_run=False):
         config_file = Path(top_config_dir, f'config_job_{str(i)}.json').resolve()
         json.dump(this_config, open(config_file, 'w'), cls=PathJSONEncoder, indent=4)
         top_env = os.environ.copy()
-        top_env['SMK_CONFIG'] = str(config_file.resolve())
+        top_env['SNK_CONFIG'] = str(config_file.resolve())
         top_env['LOAD_MODULES'] = get_demux_mods()
         top_env['SINGULARITY_CACHEDIR'] = str(top_output_dir)
         this_cmd = ["snakemake", "--use-singularity", "--singularity-args", \
