@@ -20,5 +20,5 @@ jobs:
     - name: Lint Snakefile
       continue-on-error: true
       run: |
-        docker run -v $PWD:/opt2 snakemake/snakemake:stable snakemake --lint -s /opt2/workflow/illumina/Snakefile -d /opt2/workflow/illumina || \
+        docker run -e SMK_CONFIG='/opt2/.tests/illumnia_demux/dry_run_out/.config/config_job_0.json' -v $PWD:/opt2 snakemake/snakemake:stable snakemake --lint -s /opt2/workflow/illumina/Snakefile -d /opt2/workflow/illumina || \
         echo 'There may have been a few warnings or errors. Please read through the log to determine if its harmless.'
