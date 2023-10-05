@@ -3,14 +3,9 @@ name: tests
 on:
   workflow_dispatch:
   push:
-    branches:
-      - master
-      - main
   pull_request:
-    branches_ignore: []
 
-on:
-  push:
+
 jobs:
   dry_run_and_lint:
     runs-on: ubuntu-latest
