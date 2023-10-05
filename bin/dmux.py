@@ -1,8 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 import argparse
 from pathlib import Path
-from Dmux.files import runid2samplesheet, parse_samplesheet
 from Dmux import utils
 
 main_parser = argparse.ArgumentParser(prog='dmux')
