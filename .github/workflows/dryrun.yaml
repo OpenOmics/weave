@@ -1,9 +1,7 @@
 name: tests
 
 on:
-  workflow_dispatch:
   push:
-  pull_request:
 
 
 jobs:
@@ -15,7 +13,7 @@ jobs:
     - name: Dry Run with test data
       run: |
         docker run -v $PWD:/opt2 snakemake/snakemake:stable \
-        /opt2/bin/demux run -p /opt2/.tests/illumnia_demux -o /opt2/.tests/illumnia_demux/dry_run_out
+        /opt2/bin/dmux run -p /opt2/.tests/illumnia_demux -o /opt2/.tests/illumnia_demux/dry_run_out
     - name: View the pipeline config file
       run: |
         echo "Generated config file for pipeline...." && cat $PWD/.tests/illumnia_demux/dry_run_out/.config/config_job_0.json
