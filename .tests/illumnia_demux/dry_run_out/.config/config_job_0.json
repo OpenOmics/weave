@@ -1,0 +1,68 @@
+{
+    "runs": "/spin1/home/linux/routsongrm/git/NGS/Dmux/.tests/illumnia_demux",
+    "run_ids": "illumnia_demux",
+    "projects": [
+        "GRS_0212_Bhasym"
+    ],
+    "reads_out": [
+        "LIB_04565_01_S1_R1_001.fastq.gz",
+        "LIB_04565_01_S1_R2_001.fastq.gz",
+        "LIB_04566_01_S2_R1_001.fastq.gz",
+        "LIB_04566_01_S2_R2_001.fastq.gz",
+        "LIB_04567_01_S3_R1_001.fastq.gz",
+        "LIB_04567_01_S3_R2_001.fastq.gz",
+        "LIB_04568_01_S4_R1_001.fastq.gz",
+        "LIB_04568_01_S4_R2_001.fastq.gz",
+        "LIB_04569_01_S5_R1_001.fastq.gz",
+        "LIB_04569_01_S5_R2_001.fastq.gz",
+        "LIB_04570_01_S6_R1_001.fastq.gz",
+        "LIB_04570_01_S6_R2_001.fastq.gz",
+        "LIB_04571_01_S7_R1_001.fastq.gz",
+        "LIB_04571_01_S7_R2_001.fastq.gz",
+        "LIB_04572_01_S8_R1_001.fastq.gz",
+        "LIB_04572_01_S8_R2_001.fastq.gz",
+        "LIB_04573_01_S9_R1_001.fastq.gz",
+        "LIB_04573_01_S9_R2_001.fastq.gz",
+        "LIB_04574_01_S10_R1_001.fastq.gz",
+        "LIB_04574_01_S10_R2_001.fastq.gz",
+        "LIB_04575_01_S11_R1_001.fastq.gz",
+        "LIB_04575_01_S11_R2_001.fastq.gz",
+        "LIB_04576_01_S12_R1_001.fastq.gz",
+        "LIB_04576_01_S12_R2_001.fastq.gz",
+        "LIB_04577_01_S13_R1_001.fastq.gz",
+        "LIB_04577_01_S13_R2_001.fastq.gz",
+        "LIB_04578_01_S14_R1_001.fastq.gz",
+        "LIB_04578_01_S14_R2_001.fastq.gz"
+    ],
+    "out_to": ".tests/illumnia_demux/dry_run_out/GRS_0212_demux",
+    "rnums": [
+        "1",
+        "2"
+    ],
+    "bcl_files": [],
+    "restart-times": 0,
+    "jobscript": "slurm_jobscript.sh",
+    "cluster": "bw_submit.py",
+    "cluster-status": "bw_status.py",
+    "cluster-cancel": "scancel",
+    "max-jobs-per-second": 1,
+    "max-status-checks-per-second": 1,
+    "local-cores": 4,
+    "latency-wait": 300,
+    "jobs": 50,
+    "keep-going": true,
+    "rerun-incomplete": true,
+    "use-singularity": true,
+    "singularity-args": " --cleanenv",
+    "set-resources": {
+        "__default__": {
+            "ntasks": 1,
+            "mem_mb": 16000
+        },
+        "bcl2fastq": {
+            "mem_mb": 32000,
+            "threads": 24,
+            "disk_mb": 1000
+        }
+    }
+}

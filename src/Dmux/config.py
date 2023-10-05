@@ -107,7 +107,7 @@ DIRECTORY_CONFIGS = {
         'sif': '/data/OpenOmics/SIFs/',
         'kaiju': {
             'nodes': "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/nodes.dmp",
-        database            = "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/kaiju_db_nr_euk.fmi",
+            'database': "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/kaiju_db_nr_euk.fmi",
         }
     }
     # TODO: locus
