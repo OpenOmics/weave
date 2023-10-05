@@ -12,7 +12,7 @@ jobs:
     - uses: docker://snakemake/snakemake:stable
     - name: Dry Run with test data
       run: |
-        docker run -v $PWD:/opt2 snakemake/snakemake:stable -h cn0000 /bin/bash -c \
+        docker run -h cn0000 -v $PWD:/opt2 snakemake/snakemake:stable /bin/bash -c \
         'pip install /opt2; dmux run -p /opt2/.tests/illumnia_demux -o /opt2/.tests/illumnia_demux/dry_run_out'
     - name: View the pipeline config file
       run: |
