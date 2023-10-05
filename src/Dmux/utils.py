@@ -147,7 +147,7 @@ def exec_demux_pipeline(configs, dry_run=False):
     #       we will need to expand this portion to 
     #       determine instrument type/brand by some method.
     this_instrument = 'Illumnia'
-    snake_file = SNAKEFILE[this_instrument]
+    snake_file = SNAKEFILE[this_instrument + '_demux']
     fastq_demux_profile = DIRECTORY_CONFIGS[get_current_server()]['profile']
     profile_config = {}
     if Path(fastq_demux_profile, 'config.yaml').exists():

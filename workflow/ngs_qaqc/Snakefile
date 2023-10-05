@@ -1,0 +1,6 @@
+import os
+
+
+configfile: os.environ['SMK_CONFIG']
+
+
