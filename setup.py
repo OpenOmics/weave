@@ -17,7 +17,7 @@ setup(
     package_dir={"": "src"},
     include_package_data=True,
     package_data={
-        "Dmux": ["profiles/**"]
+        "Dmux": ["profiles/**", "workflows/**"]
     },
     scripts=['bin/dmux', 'bin/dmux.py']
 )

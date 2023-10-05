@@ -174,7 +174,7 @@ def exec_snakemake(popen_cmd, env=None):
     return True
 
 
-def exec_demux_pipeline(configs, dry_run=False):
+def exec_demux_pipeline(configs, dry_run=False, local=False):
     init_mods = init_demux_mods()
     assert init_mods, f"Failed to initialize modules: {get_demux_mods()}"
     # TODO: when or if other instrument profiles are needed, 
@@ -203,9 +203,15 @@ def exec_demux_pipeline(configs, dry_run=False):
         top_env['SNK_CONFIG'] = str(config_file.resolve())
         top_env['LOAD_MODULES'] = get_demux_mods()
         top_env['SINGULARITY_CACHEDIR'] = str(top_output_dir)
-        this_cmd = ["snakemake", "--use-singularity", "--singularity-args", \
-                    f"\"-B {this_config['runs']},{str(this_config['out_to'])}\"", \
-                    "-s", f"{snake_file}", "--profile", f"{fastq_demux_profile}"]
+        this_cmd = [
+            "snakemake", "--use-singularity", "--singularity-args", \
+            f"\"-B {this_config['runs']},{str(this_config['out_to'])}\"", \
+            "-s", f"{snake_file}", 
+        ]
+
+        if not local:
+            this_cmd.extend(["--profile", f"{fastq_demux_profile}"])
+
         if dry_run:
             print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC} {esc_colors.UNDERLINE}Dry run{esc_colors.ENDC} demultiplexing of run {esc_colors.BOLD}{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
             time.sleep(0.5)

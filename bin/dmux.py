@@ -31,7 +31,7 @@ def run(args):
         utils.valid_run_output(out_to, dry_run=args.pretend)
         config['out_to'].append(out_to)
 
-    utils.exec_demux_pipeline(config, dry_run=args.pretend)
+    utils.exec_demux_pipeline(config, dry_run=args.pretend, local=args.local)
 
 
 def ngs_qc(args):
@@ -58,8 +58,10 @@ if __name__ == '__main__':
                             'matching run ids, if not using full paths.')
     parser_run.add_argument('-o', '--output', metavar='<output directory>', default=None, type=str, 
                             help='Top-level output directory for demultiplexing data (defaults to input directory + runid + "_demux")')
-    parser_run.add_argument('-p', '--pretend', action='store_true', 
+    parser_run.add_argument('-p', '--pretend', action='store_true',
                             help='Dry run the demultiplexing workflow')
+    parser_run.add_argument('-l', '--local', action='store_true',
+                            help='Execute pipeline locally without a dispatching executor')
     # add non-default samplesheet names
     # add in flag for running disabling qc
     parser_run.set_defaults(func = run)
