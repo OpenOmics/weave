@@ -42,6 +42,9 @@ def run(args):
     #   - mutate config into structs/data appropriate for `args`
     #   ngsqc(args)
 
+    # if qc not disabled:
+    #   - mutate config into structs/data appropriate for `args`
+    #   ngsqc(args)
 
 def ngsqc(args):
     """

@@ -234,6 +234,7 @@ def exec_demux_pipeline(configs, dry_run=False, local=False):
     close_mods()
 
 
+<<<<<<< HEAD
 def base_run_config():
     DEFAULT_CONFIG_KEYS = ('runs', 'run_ids', 'projects', 'reads_out', 'out_to', 'rnums', 'bcl_files')
     return base_config(DEFAULT_CONFIG_KEYS)
@@ -321,3 +322,17 @@ def exec_ngsqc_pipeline(configs, dry_run=False, local=False):
         exec_snakemake(this_cmd, env=top_env, cwd=str(Path(configs['out_to'][i]).absolute()))
 
     close_mods()
+=======
+def exec_ngs_qc_pipeline():
+    singularity_binds = "-B " + \
+        "/data/OpenOmics/references/Dmux/kraken2/k2_pluspfp_20230605:/mnt/kraken2:rw," + \
+        "/gpfs/gsfs8/users/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10:/mnt/kaiju:rw"
+
+
+
+def base_config():
+    this_config = {}
+    for elem_key in DEFAULT_CONFIG_KEYS:
+        this_config[elem_key] = []
+    return this_config
+>>>>>>> 726c174 (start ngs qc/qa pipeline, fastqc - trimmed/untrimmed + fastp trimming)
