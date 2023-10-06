@@ -202,7 +202,7 @@ def exec_demux_pipeline(configs, dry_run=False, local=False):
         top_env = os.environ.copy()
         top_env['SNK_CONFIG'] = str(config_file.resolve())
         top_env['LOAD_MODULES'] = get_demux_mods()
-        top_env['SINGULARITY_CACHEDIR'] = str(top_output_dir)
+        top_env['SINGULARITY_CACHEDIR'] = str(Path(top_output_dir, '.singularity'))
         this_cmd = [
             "snakemake", "--use-singularity", "--singularity-args", \
             f"\"-B {this_config['runs']},{str(this_config['out_to'])}\"", \
@@ -224,6 +224,13 @@ def exec_demux_pipeline(configs, dry_run=False, local=False):
                
         
     close_demux_mods()
+
+
+def exec_ngs_qc_pipeline():
+    singularity_binds = "-B " + \
+        "/data/OpenOmics/references/Dmux/kraken2/k2_pluspfp_20230605:/mnt/kraken2:rw," + \
+        "/gpfs/gsfs8/users/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10:/mnt/kaiju:rw"
+
 
 
 def base_config():

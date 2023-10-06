@@ -1,6 +1,93 @@
 import os
+from Dmux.snk_utils import get_adapter_opts
+from sample_sheet import SampleSheet
+        
+        
+configfile: os.environ['SNK_CONFIG']
+scattergather: split=8
+ruleorder:
+    fastqc_untrimmed > index_annotations > trim_w_fastp
 
 
-configfile: os.environ['SMK_CONFIG']
+ss = SampleSheet(config['sample_sheet'])
+rnums = ['1', '2'] if ss.is_paired_end else ['1']
 
 
+rule all:
+    input:
+        expand("{qc_dir}/{sid}_untrimmed_fastqc.zip", qc_dir=config['untrimmed_qc_dir'], sid=config['sids']),
+        expand("{qc_dir}/{sids}_trimmed_fastqc.zip", qc_dir=config['trimmed_qc_dir'], sids=config['sids']),
+        expand("{trim_dir}/{sids}.html", trim_dir=config['trim_dir'], sids=config['sids'])
+    # shell:
+    #     """multiqc --interactive ."""
+
+
+rule fastqc_untrimmed:
+    input:
+        sample      = expand("{input_dir}/{sid}_R{rnum}_001.fastq.gz", input_dir=config['demux_dir'], rnum=rnums, sid=config['sids']),
+    output:
+        html        = expand("{qc_dir}/{sid}_untrimmed.html", qc_dir=config['untrimmed_qc_dir'], sid=config['sids']),
+        report      = expand("{qc_dir}/{sid}_untrimmed_fastqc.zip", qc_dir=config['untrimmed_qc_dir'], sid=config['sids']),
+    params:
+        extra = "--quiet"
+    log: expand("{qc_dir}/{sid}.log", qc_dir=config['untrimmed_qc_dir'], sid=config['sids'])
+    threads: 2
+    resources:
+        mem_mb = 8192
+    wrapper:
+        "master/bio/fastqc"
+
+
+rule index_annotations:
+    input:
+        sample_sheet    = expand("{sheet}", sheet=config['sample_sheet']),
+        r1s             = expand("{demux_dir}/{sid}_R1_001.fastq.gz", demux_dir=config['demux_dir'], sid=config['sids']),
+        r2s             = expand("{demux_dir}/{sid}_R2_001.fastq.gz", demux_dir=config['demux_dir'], sid=config['sids']),
+    output:
+        index1          = expand('{demux_dir}/{sid}_index1', demux_dir=config['demux_dir'], sid=config['sids']),
+        index2          = expand('{demux_dir}/{sid}_index2', demux_dir=config['demux_dir'], sid=config['sids']),
+    run:
+        for i, samp in enumerate(ss.samples, start=1):
+            shell(f"echo \"{samp.index}\" > {config['demux_dir']}/{samp.Sample_ID}_index1")
+            if ss.is_paired_end:
+                shell(f"echo \"{samp.index2}\" > {config['demux_dir']}/{samp.Sample_ID}_index2")
+            else:
+                shell(f"touch {config['demux_dir']}/{samp.Sample_ID}_index2")
+
+
+rule trim_w_fastp:
+    input:
+        R1              = config['demux_dir'] + "/{sid}_R1_001.fastq.gz", 
+        R2              = config['demux_dir'] + "/{sid}_R2_001.fastq.gz",
+        R1_adapter      = config['demux_dir'] + "/{sid}_index1", 
+        R2_adapter      = config['demux_dir'] + "/{sid}_index2",
+    output:
+        trimmed         = config['trim_dir'] + "/{sid}_trimmed.fastq.gz",
+        unpaired1       = config['trim_dir'] + "/{sid}.u1.fastq.gz",
+        unpaired2       = config['trim_dir'] + "/{sid}.u2.fastq.gz",
+        merged          = config['trim_dir'] + "/{sid}.merged.fastq.gz",
+        failed          = config['trim_dir'] + "/{sid}.failed.fastq.gz",
+        html            = config['trim_dir'] + "/{sid}.html",
+        json            = config['trim_dir'] + "/{sid}.json",
+    params:
+        adapters        = get_adapter_opts,
+        extra           = "--merge",
+    container: "docker://rroutsong/dmux_ngsqc:0.0.1"
+    threads: 2
+    log: "logs/fastp/{sid}.log"
+    wrapper: "v2.6.0/bio/fastp"
+
+
+rule fastqc_trimmed:
+    input:
+        sample      = expand("{trim_dir}/{sids}_trimmed.fastq.gz", trim_dir=config['trim_dir'], sids=config['sids'])
+    output:
+        html        = expand("{qc_dir}/{sids}_trimmed.html", qc_dir=config['trimmed_qc_dir'], sids=config['sids']),
+        report      = expand("{qc_dir}/{sids}_trimmed_fastqc.zip", qc_dir=config['trimmed_qc_dir'], sids=config['sids']),
+    params:
+        extra = "--quiet"
+    resources:
+        mem_mb = 8192
+    threads: 2
+    log: expand("{qc_dir}/{sid}.log", qc_dir=config['trimmed_qc_dir'], sid=config['sids'])
+    wrapper: "master/bio/fastqc"

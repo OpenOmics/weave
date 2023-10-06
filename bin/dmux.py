@@ -11,6 +11,11 @@ parser_logs = sub_parser.add_parser('logs', help='logs subcommand help')
 
 
 def run(args):
+    # 1. form sample sheet into snakemake configuration json ✓
+    # 2. subprocess.Popen to kick off valid demux snakemake pipeline ✓
+    # 3. Log demultiplexing pipeline execution, run time, start finish 
+    # 4. Allow for non-default samplesheet names
+    # 5. Allow for flag to disable qc
     runs = utils.get_run_directories(args.rundir, seq_dir=args.seq_dir)
     config = utils.base_config()
  
@@ -33,10 +38,15 @@ def run(args):
 
     utils.exec_demux_pipeline(config, dry_run=args.pretend, local=args.local)
 
+    # if qc not disabled:
+    #   - mutate config into structs/data appropriate for `args`
+    #   ngsqc(args)
 
-def ngs_qc(args):
-    # kraken, kiaju, fastp, fastqscreen, fastqc, multiqc
-    pass
+
+def ngsqc(args):
+    # 1. get samplesheet and run directory for every cohort
+    #       A. Needed info: adapters for each read, single or paired
+    import ipdb; ipdb.set_trace()
 
 
 def logs(args):
@@ -61,10 +71,13 @@ if __name__ == '__main__':
     parser_run.add_argument('-p', '--pretend', action='store_true',
                             help='Dry run the demultiplexing workflow')
     parser_run.add_argument('-l', '--local', action='store_true',
-                            help='Execute pipeline locally without a dispatching executor')
-    # add non-default samplesheet names
-    # add in flag for running disabling qc
+                            help='Execute pipeline locally without a dispatching executor')xw
     parser_run.set_defaults(func = run)
+
+    parser_ngs_qc = sub_parsers.add_parser('ngsqc')
+    parser_ngs_qc.add_argument('rundir', metavar='Run directory', nargs="+", type=utils.valid_run_input, help='Full & complete run id, no wildcards or regex (format YYMMDD_INSTRUMENTID_TIME_FLOWCELLID)')
+    parser_ngs_qc.add_argument('-o', '--output', metavar='Output top directory', default=None, type=str)
+    parser_ngs_qc.set_defaults(func = ngsqc)
 
     parser_logs = sub_parsers.add_parser('logs', help='logs subcommand help')
     parser_logs.add_argument('Run', type=utils.valid_runid, 
