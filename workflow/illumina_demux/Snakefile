@@ -2,7 +2,7 @@
 import os
 
 
-configfile: os.environ['SMK_CONFIG']
+configfile: os.environ['SNK_CONFIG']
 
 
 demux_runs_projects = {

@@ -12,11 +12,12 @@ setup(
     name=dunder['__name__'],
     version=dunder['__version__'],
     install_requires=reqs,
+    python_requires='>3.6.0',
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     include_package_data=True,
     package_data={
-        "Dmux": ["profiles/**"]
+        "Dmux": ["profiles/**", "workflows/**"]
     },
     scripts=['bin/dmux', 'bin/dmux.py']
 )

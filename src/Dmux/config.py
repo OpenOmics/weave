@@ -57,7 +57,7 @@ LABKEY_COLUMNS = {
 
 # ~~~ snakemake configurations ~~~ 
 SNAKEFILE = {
-    'Illumnia_demux': Path(__file__, '../../..', 'workflow', 'illumina_demux', 'Snakefile').resolve(),
+    'Illumnia': Path(Path(__file__).parent, 'workflow', 'illumina_demux', 'Snakefile').resolve(),
 }
 
 # ~~~ directory configurations ~~~ 
