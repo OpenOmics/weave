@@ -1,5 +1,5 @@
 import os
-from Dmux.snk_utils import get_adapter_opts
+from Dmux.snk_utils import get_adapter_opts, get_fastp_sample_list
 from sample_sheet import SampleSheet
         
         
@@ -15,7 +15,7 @@ rnums = ['1', '2'] if ss.is_paired_end else ['1']
 
 rule all:
     input:
-        expand("{qc_dir}/{sid}_untrimmed_fastqc.zip", qc_dir=config['untrimmed_qc_dir'], sid=config['sids']),
+        expand("{qc_dir}/{sids}_R{rnum}_untrimmed_fastqc.zip", qc_dir=config['untrimmed_qc_dir'], sids=config['sids'], rnum=rnums),
         expand("{qc_dir}/{sids}_trimmed_fastqc.zip", qc_dir=config['trimmed_qc_dir'], sids=config['sids']),
         expand("{trim_dir}/{sids}.html", trim_dir=config['trim_dir'], sids=config['sids'])
     # shell:
@@ -24,13 +24,13 @@ rule all:
 
 rule fastqc_untrimmed:
     input:
-        sample      = expand("{input_dir}/{sid}_R{rnum}_001.fastq.gz", input_dir=config['demux_dir'], rnum=rnums, sid=config['sids']),
+        sample      = config['demux_dir'] + "/{sid}_S{snum}_R{rnum}_001.fastq.gz",
     output:
-        html        = expand("{qc_dir}/{sid}_untrimmed.html", qc_dir=config['untrimmed_qc_dir'], sid=config['sids']),
-        report      = expand("{qc_dir}/{sid}_untrimmed_fastqc.zip", qc_dir=config['untrimmed_qc_dir'], sid=config['sids']),
+        html        = config['untrimmed_qc_dir'] + "/{sid}_S{snum}_R{rnum}_untrimmed.html",
+        report      = config['untrimmed_qc_dir'] + "/{sid}_S{snum}_R{rnum}_untrimmed_fastqc.zip",
     params:
         extra = "--quiet"
-    log: expand("{qc_dir}/{sid}.log", qc_dir=config['untrimmed_qc_dir'], sid=config['sids'])
+    log: config['untrimmed_qc_dir'] + "/{sid}_S{snum}_R{rnum}.log"
     threads: 2
     resources:
         mem_mb = 8192
@@ -48,11 +48,11 @@ rule index_annotations:
         index2          = expand('{demux_dir}/{sid}_index2', demux_dir=config['demux_dir'], sid=config['sids']),
     run:
         for i, samp in enumerate(ss.samples, start=1):
-            shell(f"echo \"{samp.index}\" > {config['demux_dir']}/{samp.Sample_ID}_index1")
+            shell(f"echo \"{samp.index}\" > {config['demux_dir']}/{samp.Sample_ID}_S{str(i)}_index1")
             if ss.is_paired_end:
-                shell(f"echo \"{samp.index2}\" > {config['demux_dir']}/{samp.Sample_ID}_index2")
+                shell(f"echo \"{samp.index2}\" > {config['demux_dir']}/{samp.Sample_ID}_S{str(i)}_index2")
             else:
-                shell(f"touch {config['demux_dir']}/{samp.Sample_ID}_index2")
+                shell(f"touch {config['demux_dir']}/{samp.Sample_ID}_S{str(i)}_index2")
 
 
 rule trim_w_fastp:
@@ -61,6 +61,10 @@ rule trim_w_fastp:
         R2              = config['demux_dir'] + "/{sid}_R2_001.fastq.gz",
         R1_adapter      = config['demux_dir'] + "/{sid}_index1", 
         R2_adapter      = config['demux_dir'] + "/{sid}_index2",
+        
+        sample          = [config['demux_dir'] + "/{sid}_R1_001.fastq.gz", config['demux_dir'] + "/{sid}_R2_001.fastq.gz"] \
+                          if ss.is_paired_end else \
+                          [config['demux_dir'] + "/{sid}_R1_001.fastq.gz"]
     output:
         trimmed         = config['trim_dir'] + "/{sid}_trimmed.fastq.gz",
         unpaired1       = config['trim_dir'] + "/{sid}.u1.fastq.gz",
@@ -74,20 +78,20 @@ rule trim_w_fastp:
         extra           = "--merge",
     container: "docker://rroutsong/dmux_ngsqc:0.0.1"
     threads: 2
-    log: "logs/fastp/{sid}.log"
+    log: config['untrimmed_qc_dir'] + "/fastp_{sid}.log"
     wrapper: "v2.6.0/bio/fastp"
 
 
 rule fastqc_trimmed:
     input:
-        sample      = expand("{trim_dir}/{sids}_trimmed.fastq.gz", trim_dir=config['trim_dir'], sids=config['sids'])
+        sample      = config['trim_dir'] + "/{sid}_trimmed.fastq.gz",
     output:
-        html        = expand("{qc_dir}/{sids}_trimmed.html", qc_dir=config['trimmed_qc_dir'], sids=config['sids']),
-        report      = expand("{qc_dir}/{sids}_trimmed_fastqc.zip", qc_dir=config['trimmed_qc_dir'], sids=config['sids']),
+        html        = config['trimmed_qc_dir'] + "/{sid}_trimmed.html",
+        report      = config['trimmed_qc_dir'] + "/{sid}_trimmed_fastqc.zip",
     params:
         extra = "--quiet"
     resources:
         mem_mb = 8192
     threads: 2
-    log: expand("{qc_dir}/{sid}.log", qc_dir=config['trimmed_qc_dir'], sid=config['sids'])
+    log: config['untrimmed_qc_dir'] + "/fastqc_{sid}.log"
     wrapper: "master/bio/fastqc"

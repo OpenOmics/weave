@@ -9,3 +9,11 @@ def get_adapter_opts(wc, input):
     if r2_index not in ('', None):
         flag += f" --adapter_sequence_r2 {r2_index}"
     return flag
+
+
+def get_fastp_sample_list(r1, r1_index, r2, r2_index):
+    r1, r2 = open(r1).read().strip(), open(r2).read().strip()
+    if r2 not in ('', None):
+        return [r1, r2]
+    else:
+        return [input.R1]
