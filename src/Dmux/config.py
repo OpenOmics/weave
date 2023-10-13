@@ -102,7 +102,8 @@ DIRECTORY_CONFIGS = {
         }
     },
     'biowulf': {
-        'seq': get_biowulf_seq_dirs(),
+        # 'seq': get_biowulf_seq_dirs(),
+        'seq': Path('/data/RTB_GRS/dev/Dmux'),
         'profile': Path(Path(__file__).parent, 'profiles', 'biowulf').resolve(),
         'sif': '/data/OpenOmics/SIFs/',
         'kaiju': {
