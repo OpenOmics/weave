@@ -47,17 +47,12 @@ LABKEY_CONFIGS = {
 }
 
 
-LABKEY_COLUMNS = {
-    'bigsky': {
-        BIGSKY_DEV: {'samplesheet': 'sampleSheet'},
-        BIGSKY_QA: {'samplesheet': 'SampleSheet'}
-    }
-}
-
-
 # ~~~ snakemake configurations ~~~ 
 SNAKEFILE = {
-    'Illumnia': Path(Path(__file__).parent, 'workflow', 'illumina_demux', 'Snakefile').resolve(),
+    'Illumnia': {
+        'demux': Path(Path(__file__).parent, 'workflow', 'illumina_demux', 'Snakefile').resolve(),
+        'ngs_qc': Path(Path(__file__).parent, 'workflow', 'ngs_qaqc', 'Snakefile').resolve(),
+    }
 }
 
 # ~~~ directory configurations ~~~ 
@@ -89,7 +84,8 @@ DIRECTORY_CONFIGS = {
         'profile': Path(Path(__file__).parent, 'profiles', 'slurm').resolve(),
     },
     'biowulf': {
-        'seq': get_biowulf_seq_dirs(),
+        # 'seq': get_biowulf_seq_dirs(),
+        'seq': Path('/data/RTB_GRS/dev/Dmux'),
         'profile': Path(Path(__file__).parent, 'profiles', 'biowulf').resolve(),
     }
     # TODO: locus
