@@ -1,97 +1,23 @@
 import os
-from Dmux.snk_utils import get_adapter_opts, get_fastp_sample_list
 from sample_sheet import SampleSheet
         
-        
+envvars: "SNK_CONFIG"
 configfile: os.environ['SNK_CONFIG']
-scattergather: split=8
 ruleorder:
-    fastqc_untrimmed > index_annotations > trim_w_fastp
-
-
-ss = SampleSheet(config['sample_sheet'])
-rnums = ['1', '2'] if ss.is_paired_end else ['1']
-
+    fastqc_untrimmed > index_annotations > trim_w_fastp > fastq_screen
 
 rule all:
     input:
-        expand("{qc_dir}/{sids}_R{rnum}_untrimmed_fastqc.zip", qc_dir=config['untrimmed_qc_dir'], sids=config['sids'], rnum=rnums),
+        # fastqc on untrimmed reads
+        expand("{qc_dir}/{sids}_R{rnum}_untrimmed_fastqc.zip", qc_dir=config['untrimmed_qc_dir'], sids=config['sids'], rnum=config['rnums']),
+        # fastqc on trimmed reads
         expand("{qc_dir}/{sids}_trimmed_fastqc.zip", qc_dir=config['trimmed_qc_dir'], sids=config['sids']),
-        expand("{trim_dir}/{sids}.html", trim_dir=config['trim_dir'], sids=config['sids'])
-    # shell:
-    #     """multiqc --interactive ."""
-
-
-rule fastqc_untrimmed:
-    input:
-        sample      = config['demux_dir'] + "/{sid}_S{snum}_R{rnum}_001.fastq.gz",
-    output:
-        html        = config['untrimmed_qc_dir'] + "/{sid}_S{snum}_R{rnum}_untrimmed.html",
-        report      = config['untrimmed_qc_dir'] + "/{sid}_S{snum}_R{rnum}_untrimmed_fastqc.zip",
-    params:
-        extra = "--quiet"
-    log: config['untrimmed_qc_dir'] + "/{sid}_S{snum}_R{rnum}.log"
-    threads: 2
-    resources:
-        mem_mb = 8192
-    wrapper:
-        "master/bio/fastqc"
-
-
-rule index_annotations:
-    input:
-        sample_sheet    = expand("{sheet}", sheet=config['sample_sheet']),
-        r1s             = expand("{demux_dir}/{sid}_R1_001.fastq.gz", demux_dir=config['demux_dir'], sid=config['sids']),
-        r2s             = expand("{demux_dir}/{sid}_R2_001.fastq.gz", demux_dir=config['demux_dir'], sid=config['sids']),
-    output:
-        index1          = expand('{demux_dir}/{sid}_index1', demux_dir=config['demux_dir'], sid=config['sids']),
-        index2          = expand('{demux_dir}/{sid}_index2', demux_dir=config['demux_dir'], sid=config['sids']),
-    run:
-        for i, samp in enumerate(ss.samples, start=1):
-            shell(f"echo \"{samp.index}\" > {config['demux_dir']}/{samp.Sample_ID}_S{str(i)}_index1")
-            if ss.is_paired_end:
-                shell(f"echo \"{samp.index2}\" > {config['demux_dir']}/{samp.Sample_ID}_S{str(i)}_index2")
-            else:
-                shell(f"touch {config['demux_dir']}/{samp.Sample_ID}_S{str(i)}_index2")
-
-
-rule trim_w_fastp:
-    input:
-        R1              = config['demux_dir'] + "/{sid}_R1_001.fastq.gz", 
-        R2              = config['demux_dir'] + "/{sid}_R2_001.fastq.gz",
-        R1_adapter      = config['demux_dir'] + "/{sid}_index1", 
-        R2_adapter      = config['demux_dir'] + "/{sid}_index2",
+        # fastp trimming metrics
+        expand("{trim_dir}/{sids}.html", trim_dir=config['trim_dir'], sids=config['sids']),
+        # fastq screen
+        expand("{trim_qc_dir}/fastq_screen/{sids}.fastq_screen.txt", trim_qc_dir=config['trimmed_qc_dir'], sids=config['sids']),
+        expand("{trim_qc_dir}/fastq_screen/{sids}.fastq_screen.png", trim_qc_dir=config['trimmed_qc_dir'], sids=config['sids']),
         
-        sample          = [config['demux_dir'] + "/{sid}_R1_001.fastq.gz", config['demux_dir'] + "/{sid}_R2_001.fastq.gz"] \
-                          if ss.is_paired_end else \
-                          [config['demux_dir'] + "/{sid}_R1_001.fastq.gz"]
-    output:
-        trimmed         = config['trim_dir'] + "/{sid}_trimmed.fastq.gz",
-        unpaired1       = config['trim_dir'] + "/{sid}.u1.fastq.gz",
-        unpaired2       = config['trim_dir'] + "/{sid}.u2.fastq.gz",
-        merged          = config['trim_dir'] + "/{sid}.merged.fastq.gz",
-        failed          = config['trim_dir'] + "/{sid}.failed.fastq.gz",
-        html            = config['trim_dir'] + "/{sid}.html",
-        json            = config['trim_dir'] + "/{sid}.json",
-    params:
-        adapters        = get_adapter_opts,
-        extra           = "--merge",
-    container: "docker://rroutsong/dmux_ngsqc:0.0.1"
-    threads: 2
-    log: config['untrimmed_qc_dir'] + "/fastp_{sid}.log"
-    wrapper: "v2.6.0/bio/fastp"
 
-
-rule fastqc_trimmed:
-    input:
-        sample      = config['trim_dir'] + "/{sid}_trimmed.fastq.gz",
-    output:
-        html        = config['trimmed_qc_dir'] + "/{sid}_trimmed.html",
-        report      = config['trimmed_qc_dir'] + "/{sid}_trimmed_fastqc.zip",
-    params:
-        extra = "--quiet"
-    resources:
-        mem_mb = 8192
-    threads: 2
-    log: config['untrimmed_qc_dir'] + "/fastqc_{sid}.log"
-    wrapper: "master/bio/fastqc"
+include: "fastq.smk"
+include: "qc.smk"

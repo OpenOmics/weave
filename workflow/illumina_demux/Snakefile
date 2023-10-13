@@ -2,7 +2,7 @@
 import os
 
 
-envvars: "SMK_CONFIG",
+envvars: "SNK_CONFIG"
 configfile: os.environ['SNK_CONFIG']
 
 
