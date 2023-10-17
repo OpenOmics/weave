@@ -17,7 +17,3 @@ def get_adapter_opts(wc, input):
     if r2_adapter:
         adapter_flags += f" --adapter_sequence_r2 {r2_adapter}"
     return adapter_flags
-
-
-def fmt_input_flag_fastp(wc, input):
-    return "--in1 {} --in2 {}".format(*input.sample)

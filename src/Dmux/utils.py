@@ -161,39 +161,20 @@ def valid_run_output(output_directory, dry_run=False):
 
 
 def exec_snakemake(popen_cmd, env=None, cwd=None):
+    # async execution w/ filter: 
+    #   - https://gist.github.com/DGrady/b713db14a27be0e4e8b2ffc351051c7c
+    #   - https://lysator.liu.se/~bellman/download/asyncproc.py
+    #   - https://gist.github.com/kalebo/1e085ee36de45ffded7e5d9f857265d0
     if env is None: env = {}
 
-    popen_kwargs = dict(stderr=PIPE)
+    popen_kwargs = dict()
     if env:
         popen_kwargs['env'] = env
     if cwd:
         popen_kwargs['cwd'] = cwd
-    proc = Popen(popen_cmd, *popen_kwargs)
-    _c = 0
-    while True:
-        output = proc.stderr.readline()
-        _poll = proc.poll()
-
-        time.sleep(0.5) 
-        
-        if output:
-            this_output = output.strip().decode('utf-8')
-            jid_re = r"Submitted job (\d{1,}) with external jobid '(\d{7,})'"
-            out_find = re.search(jid_re, this_output)
-            if out_find is not None:
-                internal_jid, external_jid = out_find.groups()
-                job_msg = f"\t- {esc_colors.OKGREEN}Snakemake{esc_colors.ENDC} job id: {internal_jid}, " + \
-                          f"{esc_colors.OKGREEN}slurm{esc_colors.ENDC} job id: {external_jid}"
-                print(job_msg)
-                break
-        if _poll is not None:
-            if _poll == 1:
-                raise ChildProcessError(esc_colors.FAIL + 'Snakemake execution error: \n\n' + 
-                                        output.decode('utf-8') + esc_colors.ENDC)
-            if _poll == 0:
-                continue
-                
-    return True
+    proc = Popen(popen_cmd, **popen_kwargs)
+    proc.communicate()
+    return proc.returncode == 0
 
 
 # ~~~ for `run` subcommand ~~~
@@ -264,10 +245,9 @@ def base_qc_config():
 def get_ngsqc_mounts(*extras):
     if get_current_server() == 'biowulf':
         mount_binds = [
-            "/vf/db/fastq_screen/FastQ_Screen_Genomes",
-            "/data/OpenOmics/references/Dmux/kraken2/k2_pluspfp_20230605:/mnt/kraken2:rw",
-            "/gpfs/gsfs8/users/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10:/mnt/kaiju:rw",
-            Path.cwd(),
+            "/fdb/fastq_screen/FastQ_Screen_Genomes",
+            "/data/OpenOmics/references/Dmux/kraken2/k2_pluspfp_20230605",
+            "/gpfs/gsfs8/users/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10",
         ]
         if extras:
             for extra in extras:
@@ -276,7 +256,8 @@ def get_ngsqc_mounts(*extras):
             mount_binds.extend(extras)
     else:
         raise NotImplementedError('Have not implemented this on any server besides biowulf')
-    return "\"-B " + ','.join(map(str, mount_binds)) + "\""
+    mount_binds = [str(Path(x).resolve()) + ':' + str(x) for x in mount_binds]
+    return "\'-B " + ','.join([str(x) for x in mount_binds]) + "\'"
 
 
 def ensure_pe_adapters(samplesheets):
@@ -304,7 +285,8 @@ def exec_ngsqc_pipeline(configs, dry_run=False, local=False):
 
     top_singularity_dir = Path(configs['out_to'][0], '..', '.singularity').resolve()
     top_config_dir = Path(configs['out_to'][0], '..', '.config').resolve()
-    mk_or_fail_dirs([top_config_dir, top_singularity_dir] + configs['trim_dir'] + configs['untrimmed_qc_dir'] + configs['trimmed_qc_dir'])
+    # mk_or_fail_dirs([top_config_dir, top_singularity_dir] + configs['trim_dir'] + configs['untrimmed_qc_dir'] + configs['trimmed_qc_dir'])
+    mk_or_fail_dirs([top_config_dir] + configs['trim_dir'] + configs['untrimmed_qc_dir'] + configs['trimmed_qc_dir'])
 
     for i in range(0, len(configs['projects'])):
         this_config = {k: v[i] for k, v in configs.items()}
@@ -327,17 +309,13 @@ def exec_ngsqc_pipeline(configs, dry_run=False, local=False):
 
         if dry_run:
             print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC} {esc_colors.UNDERLINE}Dry run{esc_colors.ENDC} demultiplexing of run {esc_colors.BOLD}{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
-            time.sleep(0.5)
             this_cmd.extend(['--dry-run', '-p'])
-            print(this_cmd)
-            proc = Popen(this_cmd, env=top_env)
-            proc.communicate()
         else:
             print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC}Executing ngs qc pipeline for run {esc_colors.BOLD}"
                   f"{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
-            print(' '.join(map(str, this_cmd)))
-            # exec_snakemake(this_cmd, env=top_env, cwd=configs['out_to'][i])
-            proc = Popen(this_cmd, env=top_env, cwd=configs['out_to'][i])
-            proc.communicate()
+        
+        print(' '.join(map(str, this_cmd)))
+        out_to_up_one = str(Path(configs['out_to'][i], '..').resolve())
+        exec_snakemake(this_cmd, env=top_env, cwd=out_to_up_one)
 
     close_mods()
