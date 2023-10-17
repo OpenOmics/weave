@@ -80,7 +80,7 @@ def ngsqc(args):
             else Path(rundir, f"{sample_sheet.Header['Experiment Name']}_ngsqc").resolve()
         
         configs['out_to'].append(out_base)
-        configs['trim_dir'].append(Path(out_base, rid + '_fastp'))
+        configs['trim_dir'].append(Path(out_base, rid + '_trimmed'))
         configs['untrimmed_qc_dir'].append(Path(out_base, rid + '_fastqc', 'untrimmed'))
         configs['trimmed_qc_dir'].append(Path(out_base, rid + '_fastqc', 'trimmed'))
 
