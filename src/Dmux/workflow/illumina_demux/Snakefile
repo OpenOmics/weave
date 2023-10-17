@@ -2,6 +2,7 @@
 import os
 
 
+envvars: "SNK_CONFIG"
 configfile: os.environ['SNK_CONFIG']
 
 
@@ -37,10 +38,10 @@ rule bcl2fastq:
     output:
         seq_data               = expand("{out_to}/{project}/{reads_out}", **demux_runs_projects),
         undetermined           = expand("{out_to}/Undetermined_S0_R{rnums}_001.fastq.gz", **demux_runs_projects),
-        stats                  = expand("{out_to}/Stats/Stats.json", **demux_runs_projects)
+        stats                  = expand("{out_to}/Stats/Stats.json", **demux_runs_projects),
     params:
         out_dir                = expand("{out_to_directory}", out_to_directory=config['out_to']),
-    singularity: "docker://umccr/bcl2fastq"
+    container: "docker://umccr/bcl2fastq",
     threads: 24
     shell: 
         r"""

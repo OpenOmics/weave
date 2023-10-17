@@ -11,8 +11,13 @@ parser_logs = sub_parser.add_parser('logs', help='logs subcommand help')
 
 
 def run(args):
+    # 1. form sample sheet into snakemake configuration json ✓
+    # 2. subprocess.Popen to kick off valid demux snakemake pipeline ✓
+    # 3. Log demultiplexing pipeline execution, run time, start finish 
+    # 4. Allow for non-default samplesheet names
+    # 5. Allow for flag to disable qc
     runs = utils.get_run_directories(args.rundir, seq_dir=args.seq_dir)
-    config = utils.base_config()
+    config = utils.base_run_config()
  
     for (rundir, run_infos) in runs:
         sample_sheet = run_infos['samplesheet']
@@ -33,10 +38,53 @@ def run(args):
 
     utils.exec_demux_pipeline(config, dry_run=args.pretend, local=args.local)
 
+    # if qc not disabled:
+    #   - mutate config into structs/data appropriate for `args`
+    #   ngsqc(args)
 
-def ngs_qc(args):
-    # kraken, kiaju, fastp, fastqscreen, fastqc, multiqc
-    pass
+
+def ngsqc(args):
+    # 1. get samplesheet and run directory for every cohort ✓
+    #       A. Needed info: adapters for each read, single or paired ✓
+    # 2. FastQC on raw reads, Trim adapters from read with fastp, FastQC again on trimmed merged reads ✓
+    # 3. Fastq_screen on merged trimmed reads
+    #   A. Configure bowtie databases
+    # 4. Kraken
+    # 5. Kaiju
+    # 6. MultiQC
+    # 7. Publish
+    runs = utils.get_run_directories(args.rundir, seq_dir=args.seq_dir)
+    utils.ensure_pe_adapters([run[1]['samplesheet'] for run in runs])
+
+    configs = utils.base_qc_config()
+    for (rundir, run_info) in runs:
+        rid = run_info['run_id']
+        this_demux_dir = Path(rundir, rid + '_demux')
+        if not this_demux_dir.exists():
+            raise FileNotFoundError('Demux data directory does not exist: ' + str(this_demux_dir))
+        configs['demux_dir'].append(this_demux_dir)
+        configs['run_ids'].append(rundir.name)
+        
+        sample_sheet = run_info['samplesheet']
+        configs['sample_sheet'].append(str(sample_sheet.path.resolve()))
+        configs['projects'].append(sample_sheet.samples[0].Sample_Project)
+        sample_list = [
+            dict(sid=sample.Sample_ID+'_S'+str(i), r1_adapter=sample.index, r2_adapter=sample.index2) 
+            for i, sample in enumerate(sample_sheet.samples, start=1)
+        ]
+        configs['samples'].append(sample_list)
+        configs['sids'].append([x['sid'] for x in sample_list])
+        configs['rnums'].append(['1', '2'] if sample_sheet.is_paired_end else ['1'])
+   
+        out_base = Path(args.output, f"{sample_sheet.Header['Experiment Name']}_ngsqc").resolve() if args.output \
+            else Path(rundir, f"{sample_sheet.Header['Experiment Name']}_ngsqc").resolve()
+        
+        configs['out_to'].append(out_base)
+        configs['trim_dir'].append(Path(out_base, rid + '_trimmed'))
+        configs['untrimmed_qc_dir'].append(Path(out_base, rid + '_fastqc', 'untrimmed'))
+        configs['trimmed_qc_dir'].append(Path(out_base, rid + '_fastqc', 'trimmed'))
+
+    utils.exec_ngsqc_pipeline(configs, dry_run=args.pretend, local=args.local)
 
 
 def logs(args):
@@ -50,10 +98,11 @@ if __name__ == '__main__':
     main_parser = argparse.ArgumentParser(prog='dmux')
     sub_parsers = main_parser.add_subparsers(help='run subcommand help')
 
+    # ~~~ run[demux] subcommand ~~~
     parser_run = sub_parsers.add_parser('run')
     parser_run.add_argument('rundir', metavar='<run directory>', nargs="+", type=utils.valid_run_input, 
                             help='Full & complete run id (format YYMMDD_INSTRUMENTID_TIME_FLOWCELLID) or absolute paths')
-    parser_run.add_argument('-s', '--seq_dir', metavar='<sequencing directory', default=None, type=str,
+    parser_run.add_argument('-s', '--seq_dir', metavar='<sequencing directory>', default=None, type=str,
                             help='Root directory for sequencing data (defaults for biowulf/bigsky/locus), must contain directories ' + \
                             'matching run ids, if not using full paths.')
     parser_run.add_argument('-o', '--output', metavar='<output directory>', default=None, type=str, 
@@ -62,10 +111,25 @@ if __name__ == '__main__':
                             help='Dry run the demultiplexing workflow')
     parser_run.add_argument('-l', '--local', action='store_true',
                             help='Execute pipeline locally without a dispatching executor')
-    # add non-default samplesheet names
-    # add in flag for running disabling qc
     parser_run.set_defaults(func = run)
 
+    # ~~~ ngsqc subcommand ~~~
+    # TODO:
+    #   - evaluate wheter or not to accept non-standard sample sheet names
+    #   - evaluate wheter or not to accept non-standard demux directory
+    parser_ngs_qc = sub_parsers.add_parser('ngsqc')
+    parser_ngs_qc.add_argument('rundir', metavar='Run directory', nargs="+", type=utils.valid_run_input, help='Full & complete run id, no wildcards or regex (format YYMMDD_INSTRUMENTID_TIME_FLOWCELLID)')
+    parser_ngs_qc.add_argument('-o', '--output', metavar='<output directory>', default=None, type=str)
+    parser_ngs_qc.add_argument('-s', '--seq_dir', metavar='<sequencing directory>', default=None, type=str,
+                            help='Root directory for sequencing data (defaults for biowulf/bigsky/locus), must contain directories ' + \
+                            'matching run ids, if not using full paths.')
+    parser_ngs_qc.add_argument('-p', '--pretend', action='store_true',
+                            help='Dry run the demultiplexing workflow')
+    parser_ngs_qc.add_argument('-l', '--local', action='store_true',
+                            help='Execute pipeline locally without a dispatching executor')
+    parser_ngs_qc.set_defaults(func = ngsqc)
+
+    # ~~~ logs subcommand ~~~
     parser_logs = sub_parsers.add_parser('logs', help='logs subcommand help')
     parser_logs.add_argument('Run', type=utils.valid_runid, 
                              help='Partial or full run id, can use wildcards')

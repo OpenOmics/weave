@@ -4,48 +4,62 @@
 #   module loading functions for the Dmux software package
 # ~~~~~~~~~~~~~~~
 from Dmux.config import get_current_server
+from shutil import which
 from os import system, environ
 
 
 host = get_current_server()
 
 
-def init_demux_mods():
+def init_mods():
     if host == 'biowulf':
         try:
-            if "__LMOD_REF_COUNT_PATH" in environ:
-                environ["__LMOD_REF_COUNT_PATH"] = "/usr/local/current/singularity/3.10.5/bin:1;/usr/local/apps/snakemake/7.32.3/bin:1;" + environ['__LMOD_REF_COUNT_PATH']
-            else:
-                environ["__LMOD_REF_COUNT_PATH"] = "/usr/local/current/singularity/3.10.5/bin:1;/usr/local/apps/snakemake/7.32.3/bin:1;"
+            snk_exists = which('snakemake') is not None
+            if not snk_exists:
+                # account for virtual environment snakemake
+                if "__LMOD_REF_COUNT_PATH" in environ:
+                    environ["__LMOD_REF_COUNT_PATH"] = "/usr/local/current/singularity/3.10.5/bin:1;/usr/local/apps/snakemake/7.32.3/bin:1;" + environ['__LMOD_REF_COUNT_PATH']
+                else:
+                    environ["__LMOD_REF_COUNT_PATH"] = "/usr/local/current/singularity/3.10.5/bin:1;/usr/local/apps/snakemake/7.32.3/bin:1;"
 
+                if "_LMFILES_" in environ:
+                    environ["_LMFILES_"] = "/usr/local/lmod/modulefiles/snakemake/7.32.3.lua:" +  environ["_LMFILES_"]
+                else:
+                    environ["_LMFILES_"] = "/usr/local/lmod/modulefiles/snakemake/7.32.3.lua:"
+
+                environ["PATH"] = "/usr/local/apps/snakemake/7.32.3/bin:" + environ["PATH"]
+
+            if "_LMFILES_" in environ:
+                environ["_LMFILES_"] = "/usr/local/lmod/modulefiles/singularity/3.10.5.lua::" +  environ["_LMFILES_"]
+            else:
+                environ["_LMFILES_"] = "/usr/local/lmod/modulefiles/singularity/3.10.5.lua:"
+            
             if "__LMOD_REF_COUNT_MANPATH" in environ:
                 environ["__LMOD_REF_COUNT_MANPATH"] = "/usr/local/current/singularity/3.10.5/share/man:1;" + environ['__LMOD_REF_COUNT_MANPATH']
             else:
                 environ["__LMOD_REF_COUNT_MANPATH"] = "/usr/local/current/singularity/3.10.5/share/man:1;"
-
-            if "_LMFILES_" in environ:
-                environ["_LMFILES_"] = "/usr/local/lmod/modulefiles/snakemake/7.32.3.lua:/usr/local/lmod/modulefiles/singularity/3.10.5.lua:" +  environ["_LMFILES_"]
-            else:
-                environ["_LMFILES_"] = "/usr/local/lmod/modulefiles/snakemake/7.32.3.lua:/usr/local/lmod/modulefiles/singularity/3.10.5.lua:"
 
             if "MANPATH" in environ:
                 environ["MANPATH"] = "/usr/local/current/singularity/3.10.5/share/man:" + environ["MANPATH"]
             else:
                 environ["MANPATH"] = "/usr/local/current/singularity/3.10.5/share/man:"
 
-            environ["PATH"] = "/usr/local/current/singularity/3.10.5/bin:/usr/local/apps/snakemake/7.32.3/bin:" + environ['PATH']
-            update_vals = dict(LMOD_FAMILY_SINGULARITY = "singularity", \
-                            biowulf_FAMILY_SINGULARITY = "singularity", LOADEDMODULES = "snakemake/7.32.3:singularity/3.10.5")
+            environ["PATH"] = "/usr/local/current/singularity/3.10.5/bin:" + environ['PATH']
+            update_vals = dict(
+                LMOD_FAMILY_SINGULARITY = "singularity",
+                biowulf_FAMILY_SINGULARITY = "singularity",
+                LOADEDMODULES = "singularity/3.10.5" if not snk_exists else "snakemake/7.32.3:singularity/3.10.5"
+            )
             environ.update(update_vals)
         finally:
             proc = 0
     else:
-        proc = system(get_demux_mods())
+        proc = system(get_mods())
     return proc == 0
 
 
-def get_demux_mods():
-    mods_needed_for_demux = ['snakemake', 'singularity']
+def get_mods():
+    mods_needed = ['snakemake', 'singularity']
     mod_cmd = []
 
     if host == 'bigsky':
@@ -53,12 +67,12 @@ def get_demux_mods():
         mod_cmd.append('spack load miniconda3@4.11.0')
     else:
         mod_cmd.append('module purge')
-        mod_cmd.append(f"module load {' '.join(mods_needed_for_demux)}")
+        mod_cmd.append(f"module load {' '.join(mods_needed)}")
 
     return '; '.join(mod_cmd)
 
 
-def close_demux_mods():
+def close_mods():
     if host == 'bigsky':
         p = system('despacktivate')
     else:

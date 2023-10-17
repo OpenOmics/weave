@@ -1,6 +1,16 @@
-from setuptools import setup, find_packages 
+from setuptools import setup
 from pathlib import Path
+import os
 
+
+def package_files(directory):
+    paths = []
+    for (path, directories, filenames) in os.walk(directory):
+        for filename in filenames:
+            paths.append(os.path.join('..', path, filename))
+    return paths
+
+extra_files = package_files('workflow')
 
 with open('src/Dmux/__meta__.py') as meta:
     dunder = {}
@@ -13,11 +23,9 @@ setup(
     version=dunder['__version__'],
     install_requires=reqs,
     python_requires='>3.6.0',
-    packages=find_packages(where="src"),
+    packages=['Dmux'],
     package_dir={"": "src"},
     include_package_data=True,
-    package_data={
-        "Dmux": ["profiles/**", "workflows/**"]
-    },
-    scripts=['bin/dmux', 'bin/dmux.py']
+    package_data={'': ['workflow/**/*', 'profiles/**/*']},
+    scripts=['bin/dmux', 'bin/dmux.py'],
 )
