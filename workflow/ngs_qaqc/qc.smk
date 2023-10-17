@@ -17,37 +17,32 @@ rule index_annotations:
 
 rule fastqc_untrimmed:
     input:
-        samples     = expand("{demux_dir}/{project}/{sid}_R{rnum}_001.fastq.gz", demux_dir=config['demux_dir'], \
-                                 project=config['projects'], sid=config['sids'], rnum=config['rnums']),
+        samples     = config['demux_dir'] + "/{project}/{sid}_R{rnum}_001.fastq.gz",
         adapters    = config['untrimmed_qc_dir'] + "/fastqc_adapters.txt",
     output:
-        html        = expand("{qc_dir}/{sid}_R{rnum}_untrimmed.html", qc_dir=config['untrimmed_qc_dir'], \
-                                 project=config['projects'], sid=config['sids'], rnum=config['rnums']),
-        report      = expand("{qc_dir}/{sid}_R{rnum}_untrimmed_fastqc.zip", qc_dir=config['untrimmed_qc_dir'], \
-                                 project=config['projects'], sid=config['sids'], rnum=config['rnums']),
+        html        = config['untrimmed_qc_dir'] + "/{project}/{sid}_R{rnum}_001_fastqc.html",
+        report      = config['untrimmed_qc_dir'] + "/{project}/{sid}_R{rnum}_001_fastqc.zip",
     params:
-        output_dir  = config['untrimmed_qc_dir']
-    log: expand("{qc_dir}/{sid}_R{rnum}.log", qc_dir=config['untrimmed_qc_dir'], sid=config['sids'], rnum=config['rnums']),
-    threads: 24
+        output_dir  = lambda w: config['untrimmed_qc_dir'] + "/" + w.project 
+    log: config['untrimmed_qc_dir'] + "/logs/{project}/{sid}_R{rnum}.log"
+    threads: 4
     container: "docker://rroutsong/dmux_ngsqc:0.0.1"
-    resources:
-        mem_mb = 32768
+    resources: mem_mb = 8096
     shell:
-        "conda run -n ngsqc fastqc -o {params.output_dir} -a {input.adapters} -t {threads} {input.samples}"
+        "conda run -n ngsqc fastqc -o {params.output_dir} -a {input.adapters} -t {threads} --memory 7500 {input.samples}"
    
 
 rule fastqc_trimmed:
     input:
-        samples     = expand("{trim_dir}/{sid}_trimmed.fastq.gz", trim_dir=config['trim_dir'], sid=config['sids']),
+        in_read     = config['trim_dir'] + "/{project}/{sid}_trimmed_R{rnum}.fastq.gz",
     output:
-        html        = expand("{trim_qc_dir}/{sid}_trimmed.html", trim_qc_dir=config['trimmed_qc_dir'], sid=config['sids']),
-        report      = expand("{trim_qc_dir}/{sid}_trimmed_fastqc.zip", trim_qc_dir=config['trimmed_qc_dir'], sid=config['sids']),
+        html        = config['trimmed_qc_dir'] + "/{project}/{sid}_trimmed_R{rnum}_fastqc.html",
+        report      = config['trimmed_qc_dir'] + "/{project}/{sid}_trimmed_R{rnum}_fastqc.zip",
     params:
-        output_dir  = config['trimmed_qc_dir']
+        output_dir  = lambda w: config['trimmed_qc_dir'] + "/" + w.project
     container: "docker://rroutsong/dmux_ngsqc:0.0.1"
-    threads: 24
-    resources:
-        mem_mb = 32768
-    log: config['trimmed_qc_dir'] + "/fastqc_post_trim.log"
+    threads: 4
+    resources: mem_mb = 8096
+    log: config['trimmed_qc_dir'] + "/logs/{project}.{sid}_R{rnum}.log"
     shell:
-        "conda run -n ngsqc fastqc -o {params.output_dir} -t {threads} {input.samples}"
+        "conda run -n ngsqc fastqc -o {params.output_dir} -t {threads} {input.in_read}"
