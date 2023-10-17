@@ -40,7 +40,7 @@ class PathJSONEncoder(json.JSONEncoder):
             return str(obj)
 
 
-def mk_or_fail_dirs(dirs):
+def mk_or_fail_dirs(*dirs):
     for _dir in dirs:
         if isinstance(_dir, str):
             _dir = Path(_dir)

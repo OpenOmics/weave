@@ -13,7 +13,7 @@ jobs:
     - name: Dry Run with test data
       run: |
         docker run -h cn0000 -v $PWD:/opt2 snakemake/snakemake:stable /bin/bash -c \
-        'pip install /opt2; dmux run --local --pretend -s /opt2/.tests/illumnia_demux -o /opt2/.tests/illumnia_demux/dry_run_out'
+        'pip install /opt2; dmux run -s /opt2/.tests/illumnia_demux -o /opt2/.tests/illumnia_demux/dry_run_out --local --pretend /opt2/.tests/illumnia_demux'
     - name: View the pipeline config file
       run: |
         echo "Generated config file for pipeline...." && cat $PWD/.tests/illumnia_demux/dry_run_out/.config/config_job_0.json
