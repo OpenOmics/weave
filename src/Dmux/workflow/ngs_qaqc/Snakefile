@@ -1,6 +1,10 @@
 import os
 from sample_sheet import SampleSheet
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> b95ff7b (chore: refactor setuptools package, force include workflow and profiles, fix dry run command)
 envvars: "SNK_CONFIG"
 configfile: os.environ['SNK_CONFIG']
 
@@ -10,6 +14,7 @@ ruleorder:
 rule all:
     input:
         # fastqc on untrimmed reads
+<<<<<<< HEAD
         expand("{out_dir}/{project}/{rid}/{sids}/fastqc_untrimmed/{sids}_R{rnum}_001_fastqc.zip", out_dir=config['out_to'], 
                project=config['projects'], rid=config['run_ids'], sids=config['sids'], rnum=config['rnums']),
         # fastqc on trimmed reads
@@ -32,3 +37,20 @@ rule all:
 
 include: "fastq.smk"
 include: "qc.smk"
+=======
+        expand("{qc_dir}/{project}/{sids}_R{rnum}_001_fastqc.zip", qc_dir=config['untrimmed_qc_dir'], 
+               project=config['projects'], sids=config['sids'], rnum=config['rnums']),
+        # fastqc on trimmed reads
+        expand("{qc_dir}/{project}/{sids}_trimmed_R{rnum}_fastqc.zip", qc_dir=config['trimmed_qc_dir'], 
+               sids=config['sids'], project=config['projects'], rnum=config['rnums']),
+        # fastp trimming metrics
+        expand("{trim_dir}/{project}/{sids}_trimmed_R{rnum}.fastq.gz", trim_dir=config['trim_dir'], sids=config['sids'],
+               project=config['projects'], rnum=config['rnums']),
+        # fastq screen
+        expand("{trim_qc_dir}/fastq_screen/{sids}_{project}/{sids}_trimmed_R{rnum}_screen.html", trim_qc_dir=config['trimmed_qc_dir'], 
+               sids=config['sids'], rnum=config['rnums'], project=config['projects']),
+
+
+include: "fastq.smk"
+include: "qc.smk"
+>>>>>>> b95ff7b (chore: refactor setuptools package, force include workflow and profiles, fix dry run command)
