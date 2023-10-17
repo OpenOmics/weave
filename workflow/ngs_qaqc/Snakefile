@@ -19,9 +19,9 @@ rule all:
         expand("{trim_dir}/{project}/{sids}_trimmed_R{rnum}.fastq.gz", trim_dir=config['trim_dir'], sids=config['sids'],
                project=config['projects'], rnum=config['rnums']),
         # fastq screen
-        expand("{trim_qc_dir}/{project}/{sids}_trimmed_R{rnum}_screen.html", trim_qc_dir=config['trimmed_qc_dir'], 
+        expand("{trim_qc_dir}/fastq_screen/{sids}_{project}/{sids}_trimmed_R{rnum}_screen.html", trim_qc_dir=config['trimmed_qc_dir'], 
                sids=config['sids'], rnum=config['rnums'], project=config['projects']),
 
-               
+
 include: "fastq.smk"
 include: "qc.smk"

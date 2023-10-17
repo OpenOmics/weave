@@ -33,14 +33,14 @@ rule fastq_screen:
     input:
         read                = config['trim_dir'] + "/{project}/{sid}_trimmed_R{rnum}.fastq.gz",
     output:
-        txt                 = config['trimmed_qc_dir'] + "/{project}/{sid}_trimmed_R{rnum}_screen.txt",
-        png                 = config['trimmed_qc_dir'] + "/{project}/{sid}_trimmed_R{rnum}_screen.png",
-        html                = config['trimmed_qc_dir'] + "/{project}/{sid}_trimmed_R{rnum}_screen.html",
+        txt                 = config['trimmed_qc_dir'] + "/fastq_screen/{sid}_{project}/{sid}_trimmed_R{rnum}_screen.txt",
+        png                 = config['trimmed_qc_dir'] + "/fastq_screen/{sid}_{project}/{sid}_trimmed_R{rnum}_screen.png",
+        html                = config['trimmed_qc_dir'] + "/fastq_screen/{sid}_{project}/{sid}_trimmed_R{rnum}_screen.html",
     params:
         config_file         = "/etc/fastq_screen.conf",
         subset              = 1000000,
         aligner             = "bowtie2",
-        output_dir          = config['trimmed_qc_dir'],
+        output_dir          = lambda w: config['trimmed_qc_dir'] + "/fastq_screen/" + w.sid + "_" + w.project + "/"
     container: "docker://rroutsong/dmux_ngsqc:0.0.1",
     threads: 4,
     resources: mem_mb = 8192,
