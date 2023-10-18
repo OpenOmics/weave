@@ -29,7 +29,7 @@ rule fastqc_untrimmed:
     container: "docker://rroutsong/dmux_ngsqc:0.0.1"
     resources: mem_mb = 8096
     shell:
-        "conda run -n ngsqc fastqc -o {params.output_dir} -a {input.adapters} -t {threads} --memory 7500 {input.samples}"
+        "fastqc -o {params.output_dir} -a {input.adapters} -t {threads} --memory 7500 {input.samples}"
    
 
 rule fastqc_trimmed:
@@ -45,4 +45,4 @@ rule fastqc_trimmed:
     resources: mem_mb = 8096
     log: config['trimmed_qc_dir'] + "/logs/{project}.{sid}_R{rnum}.log"
     shell:
-        "conda run -n ngsqc fastqc -o {params.output_dir} -t {threads} {input.in_read}"
+        "fastqc -o {params.output_dir} -t {threads} {input.in_read}"
