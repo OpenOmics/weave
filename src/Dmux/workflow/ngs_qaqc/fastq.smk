@@ -19,7 +19,7 @@ rule trim_w_fastp:
     log: config['trimmed_qc_dir'] + "/fastp.{project}.{sid}.log"
     shell:
         """
-        conda run -n ngsqc fastp \
+        fastp \
         {params.adapters} \
         --in1 {input.in_read1} --in2 {input.in_read2} \
         --out1 {output.out_read1} \
@@ -47,7 +47,7 @@ rule fastq_screen:
     log: config['trimmed_qc_dir'] + "/fastq_screen.{project}.{sid}_R{rnum}.log",
     shell:
         """
-            conda run -n ngsqc fastq_screen --outdir {params.output_dir} \
+            fastq_screen --outdir {params.output_dir} \
             --force \
             --aligner {params.aligner} \
             --conf {params.config_file} \
