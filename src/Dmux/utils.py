@@ -37,20 +37,12 @@ class PathJSONEncoder(json.JSONEncoder):
             return str(obj)
 
 
-<<<<<<< HEAD
 def mk_or_pass_dirs(*dirs):
-=======
-def mk_or_fail_dirs(*dirs):
->>>>>>> main
     for _dir in dirs:
         if isinstance(_dir, str):
             _dir = Path(_dir)
         _dir = _dir.resolve()
-<<<<<<< HEAD
         _dir.mkdir(mode=0o755, parents=True, exist_ok=True)
-=======
-        _dir.mkdir(mode=0o755, parents=True, exist_ok=False)
->>>>>>> main
     return 1
 
 
@@ -198,7 +190,7 @@ def exec_demux_pipeline(configs, dry_run=False, local=False):
 
     top_singularity_dir = Path(configs['out_to'][0], '..', '.singularity').resolve()
     top_config_dir = Path(configs['out_to'][0], '..', '.config').resolve()
-    mk_or_fail_dirs(top_singularity_dir, top_config_dir)
+    mk_or_pass_dirs(top_singularity_dir, top_config_dir)
 
     for i in range(0, len(configs['projects'])):
         this_config = {k: v[i] for k, v in configs.items()}
@@ -290,20 +282,12 @@ def exec_ngsqc_pipeline(configs, dry_run=False, local=False):
 
     top_singularity_dir = Path(configs['out_to'][0], '..', '.singularity').resolve()
     top_config_dir = Path(configs['out_to'][0], '..', '.config').resolve()
-<<<<<<< HEAD
     mk_or_pass_dirs(top_singularity_dir)
-=======
-    # mk_or_fail_dirs([top_config_dir, top_singularity_dir] + configs['trim_dir'] + configs['untrimmed_qc_dir'] + configs['trimmed_qc_dir'])
-    mk_or_fail_dirs([top_config_dir] + configs['trim_dir'] + configs['untrimmed_qc_dir'] + configs['trimmed_qc_dir'])
->>>>>>> main
 
     for i in range(0, len(configs['projects'])):
         this_config = {k: v[i] for k, v in configs.items()}
         this_config.update(profile_config)
-<<<<<<< HEAD
         mk_or_pass_dirs(this_config['trim_dir'], this_config['untrimmed_qc_dir'], this_config['trimmed_qc_dir'])
-=======
->>>>>>> main
         singularity_binds = get_ngsqc_mounts(this_config['out_to'], this_config['demux_dir'])
         config_file = Path(top_config_dir, f'config_job_{str(i)}.json').resolve()
         json.dump(this_config, open(config_file, 'w'), cls=PathJSONEncoder, indent=4)
