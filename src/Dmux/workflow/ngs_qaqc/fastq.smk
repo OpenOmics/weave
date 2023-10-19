@@ -55,3 +55,43 @@ rule fastq_screen:
             --threads {threads} \
             {input.read}
         """
+
+
+rule kaiju_annotation:
+    input:
+        read1               = config['trim_dir'] + "/{project}/{sid}_trimmed_R1.fastq.gz", 
+        read2               = config['trim_dir'] + "/{project}/{sid}_trimmed_R2.fastq.gz", 
+    output:
+        kaiju_report        = config['trimmed_qc_dir'] + "/kaiju/{sid}_{project}/{sid}_kaiju_results.tsv",
+    params:
+        nodes               = "/gpfs/gsfs8/users/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/nodes.dmp",
+        database            = "/gpfs/gsfs8/users/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/kaiju_db_nr_euk.fmi",
+    container: "docker://rroutsong/dmux_ngsqc:0.0.1",
+    log: config['trimmed_qc_dir'] + "/kaiju.{project}.{sid}.log",
+    threads: 4
+    resources: 
+        mem_mb = 256000,
+    shell:
+        """
+        conda run -n ngsqc kaiju -t {params.nodes} -f {params.database} -i {input.read2} -j {input.read1} -z {threads} -o {output.kaiju_report}
+        """
+
+
+rule kraken_annotation:
+    input:
+        read1               = config['trim_dir'] + "/{project}/{sid}_trimmed_R1.fastq.gz", 
+        read2               = config['trim_dir'] + "/{project}/{sid}_trimmed_R2.fastq.gz", 
+    output:
+        kraken_report       = config['trimmed_qc_dir'] + "/kraken/{sid}_{project}/{sid}_kraken2.tsv",
+        kraken_log          = config['trimmed_qc_dir'] + "/kraken/kraken2_stdout_{project}_{sid}.log",
+    params:
+        kraken_db           = "/data/OpenOmics/references/Dmux/kraken2/k2_pluspfp_20230605"
+    container: "docker://rroutsong/dmux_ngsqc:0.0.1",
+    log: config['trimmed_qc_dir'] + "/kraken2.{project}.{sid}.log",
+    threads: 24
+    resources: 
+        mem_mb = 256000,
+    shell:
+        """
+        conda run -n ngsqc kraken2 --threads {threads} --db {params.kraken_db} --gzip-compressed --paired --report {output.kraken_report} --output {output.kraken_log} {input.read1} {input.read2}
+        """

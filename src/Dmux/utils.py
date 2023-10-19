@@ -12,13 +12,10 @@ import xml.etree.ElementTree as ET
 from Dmux.files import parse_samplesheet
 from Dmux.config import DIRECTORY_CONFIGS, SNAKEFILE, get_current_server
 from Dmux.modules import get_mods, init_mods, close_mods
-from threading import Thread
 from os import access as check_access, W_OK
 from argparse import ArgumentTypeError
-from shutil import which
 from dateutil.parser import parse as date_parser
 from subprocess import Popen, PIPE
-from tempfile import TemporaryDirectory
 from pathlib import Path, PurePath
 
 
@@ -40,12 +37,12 @@ class PathJSONEncoder(json.JSONEncoder):
             return str(obj)
 
 
-def mk_or_fail_dirs(*dirs):
+def mk_or_pass_dirs(*dirs):
     for _dir in dirs:
         if isinstance(_dir, str):
             _dir = Path(_dir)
         _dir = _dir.resolve()
-        _dir.mkdir(mode=0o755, parents=True, exist_ok=False)
+        _dir.mkdir(mode=0o755, parents=True, exist_ok=True)
     return 1
 
 
@@ -285,12 +282,12 @@ def exec_ngsqc_pipeline(configs, dry_run=False, local=False):
 
     top_singularity_dir = Path(configs['out_to'][0], '..', '.singularity').resolve()
     top_config_dir = Path(configs['out_to'][0], '..', '.config').resolve()
-    # mk_or_fail_dirs([top_config_dir, top_singularity_dir] + configs['trim_dir'] + configs['untrimmed_qc_dir'] + configs['trimmed_qc_dir'])
-    mk_or_fail_dirs([top_config_dir] + configs['trim_dir'] + configs['untrimmed_qc_dir'] + configs['trimmed_qc_dir'])
+    mk_or_pass_dirs(top_singularity_dir)
 
     for i in range(0, len(configs['projects'])):
         this_config = {k: v[i] for k, v in configs.items()}
         this_config.update(profile_config)
+        mk_or_pass_dirs(this_config['trim_dir'], this_config['untrimmed_qc_dir'], this_config['trimmed_qc_dir'])
         singularity_binds = get_ngsqc_mounts(this_config['out_to'], this_config['demux_dir'])
         config_file = Path(top_config_dir, f'config_job_{str(i)}.json').resolve()
         json.dump(this_config, open(config_file, 'w'), cls=PathJSONEncoder, indent=4)

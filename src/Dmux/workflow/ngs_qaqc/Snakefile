@@ -21,7 +21,12 @@ rule all:
         # fastq screen
         expand("{trim_qc_dir}/fastq_screen/{sids}_{project}/{sids}_trimmed_R{rnum}_screen.html", trim_qc_dir=config['trimmed_qc_dir'], 
                sids=config['sids'], rnum=config['rnums'], project=config['projects']),
-
+        # kraken2
+        expand("{trim_qc_dir}/kraken/{sids}_{project}/{sids}_kraken2.tsv", sids=config['sids'], project=config['projects'],
+               trim_qc_dir=config['trimmed_qc_dir']),
+        # kaiju
+        expand("{trim_qc_dir}/kaiju/{sids}_{project}/{sids}_kaiju_results.tsv", sids=config['sids'], project=config['projects'],
+               trim_qc_dir=config['trimmed_qc_dir']),
 
 include: "fastq.smk"
 include: "qc.smk"

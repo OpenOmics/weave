@@ -7,7 +7,7 @@ cluster-status: "slurm-status.py"
 max-jobs-per-second: "10"
 max-status-checks-per-second: "10"
 local-cores: 1
-latency-wait: "120"
+latency-wait: 120
 use-conda: False
 use-singularity: True
 jobs: "1"
@@ -18,12 +18,8 @@ set-resources:
     time: 360
     ntasks: 1
     mem_mb: 16000
-    disk_mb: 1_000_000
-    disk_mib: 1_000_000
   bcl2fastq:
     mem_mb: 32000
     threads: 24
     partition: "quick"
-    disk_mb: 1_000_000
-    disk_mib: 1_000_000
     
