@@ -38,12 +38,12 @@ class PathJSONEncoder(json.JSONEncoder):
             return str(obj)
 
 
-def mk_or_fail_dirs(*dirs):
+def mk_or_pass_dirs(*dirs):
     for _dir in dirs:
         if isinstance(_dir, str):
             _dir = Path(_dir)
         _dir = _dir.resolve()
-        _dir.mkdir(mode=0o755, parents=True, exist_ok=False)
+        _dir.mkdir(mode=0o755, parents=True, exist_ok=True)
     return 1
 
 
@@ -287,16 +287,28 @@ def exec_ngsqc_pipeline(configs, dry_run=False, local=False):
     if Path(fastq_demux_profile, 'config.yaml').exists():
         profile_config.update(yaml.safe_load(open(Path(fastq_demux_profile, 'config.yaml'))))
 
+<<<<<<< HEAD
     top_singularity_dirs = [Path(c_dir, '.singularity').absolute() for c_dir in configs['out_to']]
     top_config_dirs = [Path(c_dir, '.config').absolute() for c_dir in configs['out_to']]
     _dirs = top_singularity_dirs + top_config_dirs
     mk_or_fail_dirs(*_dirs)
+=======
+    top_singularity_dir = Path(configs['out_to'][0], '..', '.singularity').resolve()
+    top_config_dir = Path(configs['out_to'][0], '..', '.config').resolve()
+    mk_or_pass_dirs(top_singularity_dir)
+>>>>>>> a9d1fd0 (feat: kaiju and kraken annotation rules, beginning)
 
     for i in range(0, len(configs['projects'])):
         this_config = {k: v[i] for k, v in configs.items()}
         this_config.update(profile_config)
+<<<<<<< HEAD
         singularity_binds = get_ngsqc_mounts(Path(this_config['out_to']).absolute(), Path(this_config['demux_dir']).absolute())
         config_file = Path(this_config['out_to'], '.config', f'config_job_{str(i)}.json').absolute()
+=======
+        mk_or_pass_dirs(this_config['trim_dir'], this_config['untrimmed_qc_dir'], this_config['trimmed_qc_dir'])
+        singularity_binds = get_ngsqc_mounts(this_config['out_to'], this_config['demux_dir'])
+        config_file = Path(top_config_dir, f'config_job_{str(i)}.json').resolve()
+>>>>>>> a9d1fd0 (feat: kaiju and kraken annotation rules, beginning)
         json.dump(this_config, open(config_file, 'w'), cls=PathJSONEncoder, indent=4)
         top_env = {}
         top_env['PATH'] = os.environ["PATH"]
