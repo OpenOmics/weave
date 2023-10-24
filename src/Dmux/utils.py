@@ -282,7 +282,7 @@ def exec_ngsqc_pipeline(configs, dry_run=False, local=False):
 
     top_singularity_dir = Path(configs['out_to'][0], '..', '.singularity').resolve()
     top_config_dir = Path(configs['out_to'][0], '..', '.config').resolve()
-    mk_or_pass_dirs(top_singularity_dir)
+    mk_or_pass_dirs(top_singularity_dir, top_config_dir)
 
     for i in range(0, len(configs['projects'])):
         this_config = {k: v[i] for k, v in configs.items()}

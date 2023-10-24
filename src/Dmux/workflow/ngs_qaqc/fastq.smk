@@ -15,15 +15,11 @@ rule trim_w_fastp:
         adapters        = get_adapter_opts,
     container: "docker://rroutsong/dmux_ngsqc:0.0.1"
     threads: 4
-    resources: mem_mb = 8192
+    resources: mem_mb = 8192,
     log: config['trimmed_qc_dir'] + "/fastp.{project}.{sid}.log"
     shell:
         """
-<<<<<<< HEAD
-        conda run -n ngsqc fastp \
-=======
         fastp \
->>>>>>> main
         {params.adapters} \
         --in1 {input.in_read1} --in2 {input.in_read2} \
         --out1 {output.out_read1} \
@@ -72,12 +68,20 @@ rule kaiju_annotation:
         database            = "/gpfs/gsfs8/users/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/kaiju_db_nr_euk.fmi",
     container: "docker://rroutsong/dmux_ngsqc:0.0.1",
     log: config['trimmed_qc_dir'] + "/kaiju.{project}.{sid}.log",
-    threads: 4
+    threads: 24
     resources: 
-        mem_mb = 256000,
+        mem_mb = 220000,
+        slurm_partition = 'norm',
+        runtime = 60*24*2
     shell:
         """
-        conda run -n ngsqc kaiju -t {params.nodes} -f {params.database} -i {input.read2} -j {input.read1} -z {threads} -o {output.kaiju_report}
+        kaiju \
+        -t {params.nodes} \
+        -f {params.database} \
+        -i {input.read2} \
+        -j {input.read1} \
+        -z {threads} \
+        -o {output.kaiju_report}
         """
 
 
@@ -94,8 +98,17 @@ rule kraken_annotation:
     log: config['trimmed_qc_dir'] + "/kraken2.{project}.{sid}.log",
     threads: 24
     resources: 
-        mem_mb = 256000,
+        mem_mb = 220000,
+        slurm_partition = 'norm',
+        runtime = 60*24*2
     shell:
         """
-        conda run -n ngsqc kraken2 --threads {threads} --db {params.kraken_db} --gzip-compressed --paired --report {output.kraken_report} --output {output.kraken_log} {input.read1} {input.read2}
+        kraken2 \
+        --threads {threads} \
+        --db {params.kraken_db} \
+        --gzip-compressed --paired \
+        --report {output.kraken_report} \
+        --output {output.kraken_log} \
+        {input.read1} \
+        {input.read2}
         """
