@@ -37,12 +37,12 @@ class PathJSONEncoder(json.JSONEncoder):
             return str(obj)
 
 
-def mk_or_pass_dirs(*dirs):
+def mk_or_fail_dirs(*dirs):
     for _dir in dirs:
         if isinstance(_dir, str):
             _dir = Path(_dir)
         _dir = _dir.resolve()
-        _dir.mkdir(mode=0o755, parents=True, exist_ok=True)
+        _dir.mkdir(mode=0o755, parents=True, exist_ok=False)
     return 1
 
 
@@ -96,7 +96,7 @@ def valid_run_input(run):
         return run
     
     if Path(run).exists():
-        run = Path(run).resolve()
+        run = Path(run).absolute()
         return run
     
     raise ArgumentTypeError("Invalid run value, neither an id or existing path: " + str(run)) 
@@ -104,7 +104,7 @@ def valid_run_input(run):
 
 def get_run_directories(runids, seq_dir=None):
     host = get_current_server()
-    seq_dirs = Path(seq_dir).resolve() if seq_dir else DIRECTORY_CONFIGS[host]['seq']
+    seq_dirs = Path(seq_dir).absolute() if seq_dir else DIRECTORY_CONFIGS[host]['seq']
     seq_contents = [_child for _child in seq_dirs.iterdir()]
     seq_contents_names = [child for child in map(lambda d: d.name, seq_contents)]
     
@@ -113,11 +113,11 @@ def get_run_directories(runids, seq_dir=None):
     for run in runids:
         if Path(run).exists():
             # this is a full pathrun directory
-            run_paths.append(Path(run).resolve())
+            run_paths.append(Path(run))
         elif run in seq_contents_names:
             for _r in seq_contents:
                 if run == _r.name:
-                    run_paths.append(_r.resolve())
+                    run_paths.append(_r)
         else:
             invalid_runs.append(run)
 
@@ -125,11 +125,11 @@ def get_run_directories(runids, seq_dir=None):
         rid = run_p.name
         this_run_info = dict(run_id=rid)
         if Path(run_p, 'SampleSheet.csv').exists():
-            this_run_info['samplesheet'] = parse_samplesheet(Path(run_p, 'SampleSheet.csv').resolve())
+            this_run_info['samplesheet'] = parse_samplesheet(Path(run_p, 'SampleSheet.csv').absolute())
         else:
             raise FileNotFoundError(f'Run {rid}({run_p}) does not have a sample sheet.')
         if Path(run_p, 'RunInfo.xml').exists():
-            run_xml = ET.parse(Path(run_p, 'RunInfo.xml').resolve()).getroot()
+            run_xml = ET.parse(Path(run_p, 'RunInfo.xml').absolute()).getroot()
             this_run_info.update({info.tag: info.text for run in run_xml for info in run \
                              if info.text is not None and info.text.strip() not in ('\n', '')})
         else:
@@ -145,8 +145,8 @@ def get_run_directories(runids, seq_dir=None):
 
 def valid_run_output(output_directory, dry_run=False):
     if dry_run:
-        return Path(output_directory).resolve()
-    output_directory = Path(output_directory).resolve()
+        return Path(output_directory).absolute()
+    output_directory = Path(output_directory).absolute()
     if not output_directory.exists():
         output_directory.mkdir(parents=True, mode=0o765)
     else:
@@ -167,8 +167,14 @@ def exec_snakemake(popen_cmd, env=None, cwd=None):
     popen_kwargs = dict()
     if env:
         popen_kwargs['env'] = env
+    else:
+        popen_kwargs['env'] = {}
+
     if cwd:
         popen_kwargs['cwd'] = cwd
+    else:
+        popen_kwargs['cwd'] = str(Path.cwd())
+
     proc = Popen(popen_cmd, **popen_kwargs)
     proc.communicate()
     return proc.returncode == 0
@@ -188,19 +194,20 @@ def exec_demux_pipeline(configs, dry_run=False, local=False):
     if Path(fastq_demux_profile, 'config.yaml').exists():
         profile_config.update(yaml.safe_load(open(Path(fastq_demux_profile, 'config.yaml'))))
 
-    top_singularity_dir = Path(configs['out_to'][0], '..', '.singularity').resolve()
-    top_config_dir = Path(configs['out_to'][0], '..', '.config').resolve()
-    mk_or_pass_dirs(top_singularity_dir, top_config_dir)
+    top_singularity_dirs = [Path(c_dir, '.singularity').absolute() for c_dir in configs['out_to']]
+    top_config_dirs = [Path(c_dir, '.config').absolute() for c_dir in configs['out_to']]
+    _dirs = top_singularity_dirs + top_config_dirs
+    mk_or_fail_dirs(*_dirs)
 
     for i in range(0, len(configs['projects'])):
         this_config = {k: v[i] for k, v in configs.items()}
         this_config.update(profile_config)
-        config_file = Path(top_config_dir, f'config_job_{str(i)}.json').resolve()
+        config_file = Path(this_config['out_to'], '.config', f'config_job_{str(i)}.json').absolute()
         json.dump(this_config, open(config_file, 'w'), cls=PathJSONEncoder, indent=4)
-        top_env = os.environ.copy()
-        top_env['SNK_CONFIG'] = str(config_file.resolve())
+        top_env = {}
+        top_env['SNK_CONFIG'] = str(config_file.absolute())
         top_env['LOAD_MODULES'] = get_mods()
-        top_env['SINGULARITY_CACHEDIR'] = str(top_singularity_dir)
+        top_env['SINGULARITY_CACHEDIR'] = str(Path(this_config['out_to'], '.singularity').absolute())
         this_cmd = [
             "snakemake", "--use-singularity", "--singularity-args",
             f"\"-B {this_config['runs']},{str(this_config['out_to'])}\"",
@@ -220,22 +227,20 @@ def exec_demux_pipeline(configs, dry_run=False, local=False):
         else:
             print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC}Executing demultiplexing of run{esc_colors.BOLD}"
                   f"{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
-            exec_snakemake(this_cmd, top_env)
+            exec_snakemake(this_cmd, env=top_env, cwd=str(Path(configs['out_to'][i]).absolute()))
                
         
     close_mods()
 
 
 def base_run_config():
-    DEFAULT_CONFIG_KEYS = ('runs', 'run_ids', 'projects', 'reads_out', 'out_to', 'rnums', 
-                           'bcl_files')
+    DEFAULT_CONFIG_KEYS = ('runs', 'run_ids', 'projects', 'reads_out', 'out_to', 'rnums', 'bcl_files')
     return base_config(DEFAULT_CONFIG_KEYS)
 
 
 # ~~~ for `ngsqc` subcommand ~~~
 def base_qc_config():
-    DEFAULT_CONFIG_KEYS = ('sample_sheet', 'run_ids', 'projects', 'trim_dir', 'samples', 'sids', 
-                           'out_to', 'untrimmed_qc_dir', 'trimmed_qc_dir', 'demux_dir', 'rnums')
+    DEFAULT_CONFIG_KEYS = ('sample_sheet', 'run_ids', 'projects', 'samples', 'sids', 'out_to', 'demux_dir', 'rnums')
     return base_config(DEFAULT_CONFIG_KEYS)
 
 
@@ -244,7 +249,7 @@ def get_ngsqc_mounts(*extras):
         mount_binds = [
             "/fdb/fastq_screen/FastQ_Screen_Genomes",
             "/data/OpenOmics/references/Dmux/kraken2/k2_pluspfp_20230605",
-            "/gpfs/gsfs8/users/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10",
+            "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10",
         ]
         if extras:
             for extra in extras:
@@ -253,7 +258,7 @@ def get_ngsqc_mounts(*extras):
             mount_binds.extend(extras)
     else:
         raise NotImplementedError('Have not implemented this on any server besides biowulf')
-    mount_binds = [str(Path(x).resolve()) + ':' + str(x) for x in mount_binds]
+    mount_binds = [str(Path(x).resolve()) + ':' + str(x) + ':rw' for x in mount_binds]
     return "\'-B " + ','.join([str(x) for x in mount_binds]) + "\'"
 
 
@@ -280,25 +285,25 @@ def exec_ngsqc_pipeline(configs, dry_run=False, local=False):
     if Path(fastq_demux_profile, 'config.yaml').exists():
         profile_config.update(yaml.safe_load(open(Path(fastq_demux_profile, 'config.yaml'))))
 
-    top_singularity_dir = Path(configs['out_to'][0], '..', '.singularity').resolve()
-    top_config_dir = Path(configs['out_to'][0], '..', '.config').resolve()
-    mk_or_pass_dirs(top_singularity_dir, top_config_dir)
+    top_singularity_dirs = [Path(c_dir, '.singularity').absolute() for c_dir in configs['out_to']]
+    top_config_dirs = [Path(c_dir, '.config').absolute() for c_dir in configs['out_to']]
+    _dirs = top_singularity_dirs + top_config_dirs
+    mk_or_fail_dirs(*_dirs)
 
     for i in range(0, len(configs['projects'])):
         this_config = {k: v[i] for k, v in configs.items()}
         this_config.update(profile_config)
-        mk_or_pass_dirs(this_config['trim_dir'], this_config['untrimmed_qc_dir'], this_config['trimmed_qc_dir'])
-        singularity_binds = get_ngsqc_mounts(this_config['out_to'], this_config['demux_dir'])
-        config_file = Path(top_config_dir, f'config_job_{str(i)}.json').resolve()
+        singularity_binds = get_ngsqc_mounts(Path(this_config['out_to']).absolute(), Path(this_config['demux_dir']).absolute())
+        config_file = Path(this_config['out_to'], '.config', f'config_job_{str(i)}.json').absolute()
         json.dump(this_config, open(config_file, 'w'), cls=PathJSONEncoder, indent=4)
-        top_env = os.environ.copy()
-        top_env['SNK_CONFIG'] = str(config_file.resolve())
+        top_env = {}
+        top_env['PATH'] = os.environ["PATH"]
+        top_env['SNK_CONFIG'] = str(config_file.absolute())
         top_env['LOAD_MODULES'] = get_mods()
-        top_env['ACTIVATE_ENV'] = 'ngsqc'
-        top_env['SINGULARITY_CACHEDIR'] = str(top_singularity_dir)
+        top_env['SINGULARITY_CACHEDIR'] = str(Path(this_config['out_to'], '.singularity').absolute())
         this_cmd = [
-            "snakemake", "--use-singularity", "--singularity-args", \
-            singularity_binds, "-s", f"{snake_file}", "--profile", fastq_demux_profile
+            "snakemake", "--use-singularity", "--singularity-args", singularity_binds, 
+            "-s", f"{snake_file}", "--profile", fastq_demux_profile
         ]
 
         if not local:
@@ -312,7 +317,6 @@ def exec_ngsqc_pipeline(configs, dry_run=False, local=False):
                   f"{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
         
         print(' '.join(map(str, this_cmd)))
-        out_to_up_one = str(Path(configs['out_to'][i], '..').resolve())
-        exec_snakemake(this_cmd, env=top_env, cwd=out_to_up_one)
+        exec_snakemake(this_cmd, env=top_env, cwd=str(Path(configs['out_to'][i]).absolute()))
 
     close_mods()

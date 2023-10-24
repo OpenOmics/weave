@@ -3,20 +3,21 @@ from Dmux.snk_utils import get_adapter_opts
 
 rule trim_w_fastp:
     input:
-        adapters        = config['untrimmed_qc_dir'] + "/fastqc_adapters.txt",
+        adapters        = config['out_to'] + "/" + config['run_ids'] + "/fastqc_adapters.txt",
         in_read1        = config['demux_dir'] + "/{project}/{sid}_R1_001.fastq.gz",
         in_read2        = config['demux_dir'] + "/{project}/{sid}_R2_001.fastq.gz",
     output:
-        html            = config['trim_dir'] + "/{project}/{sid}.html",
-        json            = config['trim_dir'] + "/{project}/{sid}.json",
-        out_read1       = config['trim_dir'] + "/{project}/{sid}_trimmed_R1.fastq.gz",
-        out_read2       = config['trim_dir'] + "/{project}/{sid}_trimmed_R2.fastq.gz",
+        html            = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastp/{sid}.html",
+        json            = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastp/{sid}.json",
+        out_read1       = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastp/{sid}_trimmed_R1.fastq.gz",
+        out_read2       = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastp/{sid}_trimmed_R2.fastq.gz",
     params:
         adapters        = get_adapter_opts,
-    container: "docker://rroutsong/dmux_ngsqc:0.0.1"
-    threads: 4
+    # container: "docker://rroutsong/dmux_ngsqc:0.0.1",
+    containerized: "/data/OpenOmics/SIFs/dmux_ngsqc_0.0.1.sif"
+    threads: 4,
     resources: mem_mb = 8192,
-    log: config['trimmed_qc_dir'] + "/fastp.{project}.{sid}.log"
+    log: config['out_to'] + "/.logs/{project}/" + config['run_ids'] + "/fastp/{sid}.log",
     shell:
         """
         fastp \
@@ -31,20 +32,21 @@ rule trim_w_fastp:
 
 rule fastq_screen:
     input:
-        read                = config['trim_dir'] + "/{project}/{sid}_trimmed_R{rnum}.fastq.gz",
+        read                = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastp/{sid}_trimmed_R{rnum}.fastq.gz",
     output:
-        txt                 = config['trimmed_qc_dir'] + "/fastq_screen/{sid}_{project}/{sid}_trimmed_R{rnum}_screen.txt",
-        png                 = config['trimmed_qc_dir'] + "/fastq_screen/{sid}_{project}/{sid}_trimmed_R{rnum}_screen.png",
-        html                = config['trimmed_qc_dir'] + "/fastq_screen/{sid}_{project}/{sid}_trimmed_R{rnum}_screen.html",
+        txt                 = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastq_screen/{sid}_trimmed_R{rnum}_screen.txt",
+        png                 = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastq_screen/{sid}_trimmed_R{rnum}_screen.png",
+        html                = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastq_screen/{sid}_trimmed_R{rnum}_screen.html",
     params:
         config_file         = "/etc/fastq_screen.conf",
         subset              = 1000000,
         aligner             = "bowtie2",
-        output_dir          = lambda w: config['trimmed_qc_dir'] + "/fastq_screen/" + w.sid + "_" + w.project + "/"
-    container: "docker://rroutsong/dmux_ngsqc:0.0.1",
+        output_dir          = lambda w: config['out_to'] + "/" + w.project + "/" + config['run_ids'] + "/" + w.sid + "/fastq_screen/",
+    # container: "docker://rroutsong/dmux_ngsqc:0.0.1",
+    containerized: "/data/OpenOmics/SIFs/dmux_ngsqc_0.0.1.sif"
     threads: 4,
     resources: mem_mb = 8192,
-    log: config['trimmed_qc_dir'] + "/fastq_screen.{project}.{sid}_R{rnum}.log",
+    log: config['out_to'] + "/.logs/{project}/" + config['run_ids'] + "/fastq_screen/{sid}_R{rnum}.log",
     shell:
         """
             fastq_screen --outdir {params.output_dir} \
@@ -59,15 +61,17 @@ rule fastq_screen:
 
 rule kaiju_annotation:
     input:
-        read1               = config['trim_dir'] + "/{project}/{sid}_trimmed_R1.fastq.gz", 
-        read2               = config['trim_dir'] + "/{project}/{sid}_trimmed_R2.fastq.gz", 
+        read1               = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastp/{sid}_trimmed_R1.fastq.gz", 
+        read2               = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastp/{sid}_trimmed_R2.fastq.gz",
     output:
-        kaiju_report        = config['trimmed_qc_dir'] + "/kaiju/{sid}_{project}/{sid}_kaiju_results.tsv",
+        kaiju_report        = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/kaiju/{sid}.tsv",
     params:
+        # TODO: soft code these paths
         nodes               = "/gpfs/gsfs8/users/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/nodes.dmp",
         database            = "/gpfs/gsfs8/users/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/kaiju_db_nr_euk.fmi",
-    container: "docker://rroutsong/dmux_ngsqc:0.0.1",
-    log: config['trimmed_qc_dir'] + "/kaiju.{project}.{sid}.log",
+    # container: "docker://rroutsong/dmux_ngsqc:0.0.1",
+    containerized: "/data/OpenOmics/SIFs/dmux_ngsqc_0.0.1.sif"
+    log: config['out_to'] + "/.logs/{project}/" + config['run_ids'] + "/kaiju/{sid}.log",
     threads: 24
     resources: 
         mem_mb = 220000,
@@ -87,15 +91,16 @@ rule kaiju_annotation:
 
 rule kraken_annotation:
     input:
-        read1               = config['trim_dir'] + "/{project}/{sid}_trimmed_R1.fastq.gz", 
-        read2               = config['trim_dir'] + "/{project}/{sid}_trimmed_R2.fastq.gz", 
+        read1               = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastp/{sid}_trimmed_R1.fastq.gz", 
+        read2               = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastp/{sid}_trimmed_R2.fastq.gz",
     output:
-        kraken_report       = config['trimmed_qc_dir'] + "/kraken/{sid}_{project}/{sid}_kraken2.tsv",
-        kraken_log          = config['trimmed_qc_dir'] + "/kraken/kraken2_stdout_{project}_{sid}.log",
+        kraken_report       = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/kraken/{sid}.tsv",
+        kraken_log          = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/kraken/{sid}.log",
     params:
         kraken_db           = "/data/OpenOmics/references/Dmux/kraken2/k2_pluspfp_20230605"
-    container: "docker://rroutsong/dmux_ngsqc:0.0.1",
-    log: config['trimmed_qc_dir'] + "/kraken2.{project}.{sid}.log",
+    # container: "docker://rroutsong/dmux_ngsqc:0.0.1",
+    containerized: "/data/OpenOmics/SIFs/dmux_ngsqc_0.0.1.sif"
+    log: config['out_to'] + "/.logs/{project}/" + config['run_ids'] + "/kraken/{sid}.log",
     threads: 24
     resources: 
         mem_mb = 220000,
