@@ -3,7 +3,7 @@ from Dmux.snk_utils import get_adapter_opts
 
 rule trim_w_fastp:
     input:
-        adapters        = config['out_to'] + "/" + config['run_ids'] + "/fastqc_adapters.txt",
+        adapters        = config['out_to'] + "/{project}/" + config['run_ids'] + "/fastqc_adapters.txt",
         in_read1        = config['demux_dir'] + "/{project}/{sid}_R1_001.fastq.gz",
         in_read2        = config['demux_dir'] + "/{project}/{sid}_R2_001.fastq.gz",
     output:
@@ -67,8 +67,8 @@ rule kaiju_annotation:
         kaiju_report        = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/kaiju/{sid}.tsv",
     params:
         # TODO: soft code these paths
-        nodes               = "/gpfs/gsfs8/users/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/nodes.dmp",
-        database            = "/gpfs/gsfs8/users/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/kaiju_db_nr_euk.fmi",
+        nodes               = "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/nodes.dmp",
+        database            = "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/kaiju_db_nr_euk.fmi",
     # container: "docker://rroutsong/dmux_ngsqc:0.0.1",
     containerized: "/data/OpenOmics/SIFs/dmux_ngsqc_0.0.1.sif"
     log: config['out_to'] + "/.logs/{project}/" + config['run_ids'] + "/kaiju/{sid}.log",
