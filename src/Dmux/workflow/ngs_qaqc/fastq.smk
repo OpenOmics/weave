@@ -17,10 +17,17 @@ rule trim_w_fastp:
         out_read2       = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastp/{sid}_trimmed_R2.fastq.gz",
     params:
         adapters        = get_adapter_opts,
+<<<<<<< HEAD
     containerized: server_config["sif"] + "dmux_ngsqc_0.0.1.sif"
     threads: 4,
     resources: mem_mb = 8192,
     log: config['out_to'] + "/.logs/{project}/" + config['run_ids'] + "/fastp/{sid}.log",
+=======
+    container: "docker://rroutsong/dmux_ngsqc:0.0.1"
+    threads: 4
+    resources: mem_mb = 8192,
+    log: config['trimmed_qc_dir'] + "/fastp.{project}.{sid}.log"
+>>>>>>> 797119a (feat: working kraken & kaiju)
     shell:
         """
         fastp \
