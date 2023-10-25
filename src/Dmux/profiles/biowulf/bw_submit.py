@@ -138,7 +138,7 @@ def make_sbatch_cmd(props):
         partition = assign_partition(threads, mem_mb, time_min, gres, ntasks, nodes)
 
     sbatch_cmd += [
-        f"--output=logs/{rule}-%j.out",
+        f"--output=.slurm/logs/{rule}-%j.out",
         f"--partition={partition}",
     ]
 
@@ -159,7 +159,7 @@ if __name__ == "__main__":
 
     # make sure log dir exists
     try:
-        os.mkdir("logs")
+        os.makedirs(".slurm/logs")
     except FileExistsError:
         pass
     except OSError as err:
