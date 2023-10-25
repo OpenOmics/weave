@@ -33,10 +33,10 @@ def run(args):
         config['bcl_files'].append(list(Path(rundir).rglob('*.bcl.*')))
         out_to = Path(args.output, f"{sample_sheet.Header['Experiment Name']}_demux") if args.output \
             else Path(rundir, f"{sample_sheet.Header['Experiment Name']}_demux")
-        utils.valid_run_output(out_to, dry_run=args.pretend)
+        utils.valid_run_output(out_to, dry_run=args.dry_run)
         config['out_to'].append(out_to)
 
-    utils.exec_demux_pipeline(config, dry_run=args.pretend, local=args.local)
+    utils.exec_demux_pipeline(config, dry_run=args.dry_run, local=args.local)
 
     # if qc not disabled:
     #   - mutate config into structs/data appropriate for `args`
