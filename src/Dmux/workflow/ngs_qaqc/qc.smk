@@ -29,7 +29,6 @@ rule fastqc_untrimmed:
         output_dir  = lambda w: config['out_to'] + "/" + w.project + "/" + config['run_ids'] + "/" + w.sid + "/fastqc_untrimmed/"
     log: config['out_to'] + "/.logs/{project}/" + config['run_ids'] + "/fastqc_untrimmed/{sid}_R{rnum}.log"
     threads: 4
-    # container: "docker://rroutsong/dmux_ngsqc:0.0.1",
     containerized: "/data/OpenOmics/SIFs/dmux_ngsqc_0.0.1.sif"
     resources: mem_mb = 8096
     shell:
@@ -56,4 +55,46 @@ rule fastqc_trimmed:
         """
         mkdir -p {params.output_dir}
         fastqc -o {params.output_dir} -t {threads} {input.in_read}
+        """
+
+
+rule multiqc_report:
+    input:
+        # fastqc on untrimmed reads
+        expand("{out_dir}/{project}/{rid}/{sids}/fastqc_untrimmed/{sids}_R{rnum}_001_fastqc.zip", out_dir=config['out_to'], 
+               project=config['projects'], rid=config['run_ids'], sids=config['sids'], rnum=config['rnums']),
+        # fastqc on trimmed reads
+        expand("{out_dir}/{project}/{rid}/{sids}/fastqc_trimmed/{sids}_trimmed_R{rnum}_fastqc.zip", out_dir=config['out_to'], 
+               sids=config['sids'], project=config['projects'], rid=config['run_ids'], rnum=config['rnums']),
+        # fastp trimming metrics
+        expand("{out_dir}/{project}/{rid}/{sids}/fastp/{sids}_trimmed_R{rnum}.fastq.gz", out_dir=config['out_to'], 
+               sids=config['sids'], project=config['projects'], rid=config['run_ids'], rnum=config['rnums']),
+        # fastq screen
+        expand("{out_dir}/{project}/{rid}/{sids}/fastq_screen/{sids}_trimmed_R{rnum}_screen.html", out_dir=config['out_to'], 
+               sids=config['sids'], rnum=config['rnums'], rid=config['run_ids'], project=config['projects']),
+        # kraken2
+        expand("{out_dir}/{project}/{rid}/{sids}/kraken/{sids}.tsv", out_dir=config['out_to'], sids=config['sids'], 
+               project=config['projects'], rid=config['run_ids']),
+        # kaiju
+        expand("{out_dir}/{project}/{rid}/{sids}/kaiju/{sids}.tsv", out_dir=config['out_to'], sids=config['sids'], 
+               project=config['projects'], rid=config['run_ids']),
+    output:
+        mqc_report      = f"{config['out_to']}/{config['projects']}/{config['run_ids']}" + \
+                           "/multiqc/Run-230907_NS500353_0215_AHLTNVBGXM-Project-GRS_0212_Bhasym_multiqc_report.html"
+    params:
+        input_dir       = config['out_to'],
+        demux_dir       = config['demux_dir'],
+        output_dir      = config['out_to'] + "/" + config['projects'] + "/" + config['run_ids'] + "/multiqc/",
+        report_title    = f"Run: {config['run_ids']}, Project: {config['projects']}",
+    containerized: "/data/OpenOmics/SIFs/dmux_ngsqc_0.0.1.sif"
+    threads: 4
+    resources: mem_mb = 8096
+    log: config['out_to'] + "/.logs/" + config['projects'] + "/" + config['run_ids'] + "/multiqc/multiqc.log"
+    shell:
+        """
+        multiqc -q -ip \
+        --title \"{params.report_title}\" \
+        -o {params.output_dir} \
+        {params.input_dir} {params.demux_dir} \
+        --ignore ".cache" --ignore ".config" --ignore ".snakemake" --ignore ".slurm" --ignore ".singularity" --ignore ".logs"
         """

@@ -27,6 +27,8 @@ rule all:
         # kaiju
         expand("{out_dir}/{project}/{rid}/{sids}/kaiju/{sids}.tsv", out_dir=config['out_to'], sids=config['sids'], 
                project=config['projects'], rid=config['run_ids']),
+        f"{config['out_to']}/{config['projects']}/{config['run_ids']}/multiqc/multiqc_report.html",
+
 
 include: "fastq.smk"
 include: "qc.smk"
