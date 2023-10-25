@@ -9,6 +9,7 @@ import os
 import yaml
 import time
 import xml.etree.ElementTree as ET
+from shutil import which
 from Dmux.files import parse_samplesheet
 from Dmux.config import DIRECTORY_CONFIGS, SNAKEFILE, get_current_server
 from Dmux.modules import get_mods, init_mods, close_mods
@@ -205,12 +206,13 @@ def exec_demux_pipeline(configs, dry_run=False, local=False):
         config_file = Path(this_config['out_to'], '.config', f'config_job_{str(i)}.json').absolute()
         json.dump(this_config, open(config_file, 'w'), cls=PathJSONEncoder, indent=4)
         top_env = {}
+        top_env['PATH'] = os.environ['PATH']
         top_env['SNK_CONFIG'] = str(config_file.absolute())
         top_env['LOAD_MODULES'] = get_mods()
         top_env['SINGULARITY_CACHEDIR'] = str(Path(this_config['out_to'], '.singularity').absolute())
         this_cmd = [
             "snakemake", "--use-singularity", "--singularity-args",
-            f"\"-B {this_config['runs']},{str(this_config['out_to'])}\"",
+            f"\'-B {this_config['runs']},{str(this_config['out_to'])}\'",
             "-s", f"{snake_file}", 
         ]
 
@@ -220,7 +222,6 @@ def exec_demux_pipeline(configs, dry_run=False, local=False):
         if dry_run:
             print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC} {esc_colors.UNDERLINE}Dry run{esc_colors.ENDC} "
                   f"demultiplexing of run {esc_colors.BOLD}{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
-            time.sleep(0.5)
             this_cmd.extend(['--dry-run', '-p'])
             proc = Popen(this_cmd, env=top_env)
             proc.communicate()
