@@ -84,8 +84,7 @@ DIRECTORY_CONFIGS = {
         'profile': Path(Path(__file__).parent, 'profiles', 'slurm').resolve(),
     },
     'biowulf': {
-        # 'seq': get_biowulf_seq_dirs(),
-        'seq': Path('/data/RTB_GRS/dev/Dmux'),
+        'seq': get_biowulf_seq_dirs(),
         'profile': Path(Path(__file__).parent, 'profiles', 'biowulf').resolve(),
     }
     # TODO: locus

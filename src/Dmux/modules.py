@@ -14,7 +14,7 @@ host = get_current_server()
 def init_mods():
     if host == 'biowulf':
         try:
-            snk_exists = which('snakemake') is not None
+            snk_exists = 'snakemake' in environ["PATH"]
             if not snk_exists:
                 # account for virtual environment snakemake
                 if "__LMOD_REF_COUNT_PATH" in environ:

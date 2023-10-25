@@ -64,9 +64,8 @@ def ngsqc(args):
             raise FileNotFoundError('Demux data directory does not exist: ' + str(this_demux_dir))
         configs['demux_dir'].append(this_demux_dir)
         configs['run_ids'].append(rundir.name)
-        
         sample_sheet = run_info['samplesheet']
-        configs['sample_sheet'].append(str(sample_sheet.path.resolve()))
+        configs['sample_sheet'].append(str(sample_sheet.path.absolute()))
         configs['projects'].append(sample_sheet.samples[0].Sample_Project)
         sample_list = [
             dict(sid=sample.Sample_ID+'_S'+str(i), r1_adapter=sample.index, r2_adapter=sample.index2) 
@@ -76,13 +75,10 @@ def ngsqc(args):
         configs['sids'].append([x['sid'] for x in sample_list])
         configs['rnums'].append(['1', '2'] if sample_sheet.is_paired_end else ['1'])
    
-        out_base = Path(args.output, f"{sample_sheet.Header['Experiment Name']}_ngsqc").resolve() if args.output \
-            else Path(rundir, f"{sample_sheet.Header['Experiment Name']}_ngsqc").resolve()
+        out_base = Path(args.output).absolute() if args.output \
+            else Path(rundir, f"{sample_sheet.Header['Experiment Name']}_ngsqc").absolute()
         
         configs['out_to'].append(out_base)
-        configs['trim_dir'].append(Path(out_base, rid + '_trimmed'))
-        configs['untrimmed_qc_dir'].append(Path(out_base, rid + '_fastqc', 'untrimmed'))
-        configs['trimmed_qc_dir'].append(Path(out_base, rid + '_fastqc', 'trimmed'))
 
     utils.exec_ngsqc_pipeline(configs, dry_run=args.pretend, local=args.local)
 
