@@ -43,8 +43,8 @@ rule fastqc_trimmed:
     input:
         in_read     = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastp/{sid}_trimmed_R{rnum}.fastq.gz",
     output:
-        html        = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastqc_trimmed/{sid}_R{rnum}_001_fastqc.html",
-        fqreport    = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastqc_trimmed/{sid}_R{rnum}_001_fastqc.zip",
+        html        = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastqc_trimmed/{sid}_trimmed_R{rnum}_fastqc.html",
+        fqreport    = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastqc_trimmed/{sid}_trimmed_R{rnum}_fastqc.zip",
     params:
         output_dir  = lambda w: config['out_to'] + "/" + w.project + "/" + config['run_ids'] + "/" + w.sid + "/fastqc_trimmed/"
     # container: "docker://rroutsong/dmux_ngsqc:0.0.1",
