@@ -46,7 +46,6 @@ rule fastqc_trimmed:
         fqreport    = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastqc_trimmed/{sid}_trimmed_R{rnum}_fastqc.zip",
     params:
         output_dir  = lambda w: config['out_to'] + "/" + w.project + "/" + config['run_ids'] + "/" + w.sid + "/fastqc_trimmed/"
-    # container: "docker://rroutsong/dmux_ngsqc:0.0.1",
     containerized: "/data/OpenOmics/SIFs/dmux_ngsqc_0.0.1.sif"
     threads: 4
     resources: mem_mb = 8096
@@ -80,7 +79,8 @@ rule multiqc_report:
                project=config['projects'], rid=config['run_ids']),
     output:
         mqc_report      = f"{config['out_to']}/{config['projects']}/{config['run_ids']}" + \
-                           "/multiqc/Run-230907_NS500353_0215_AHLTNVBGXM-Project-GRS_0212_Bhasym_multiqc_report.html"
+                           "/multiqc/Run-" +  config['run_ids'] + \
+                           "-Project-" +  config['projects'] + "_multiqc_report.html"
     params:
         input_dir       = config['out_to'],
         demux_dir       = config['demux_dir'],
