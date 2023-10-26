@@ -69,7 +69,21 @@ def get_bigsky_seq_dirs():
     transfer_breadcrumb = 'RTAComplete.txt'
     if not top_dir.exists():
         return None
-    return [xx for x in top_dir.iterdir() if x.is_dir() for xx in x.iterdir() if xx.is_dir() and Path(xx, transfer_breadcrumb).exists()]
+    seq_dirs = []
+    for this_dir in top_dir.iterdir():
+        if not this_dir.is_dir(): continue
+        for this_child_elem in this_dir.iterdir():
+            try:
+                elem_checks = [
+                    this_child_elem.is_dir(), 
+                    Path(this_child_elem, transfer_breadcrumb).exists(),
+                    check_access(this_child_elem, R_OK)
+                ]
+            except (PermissionError, FileNotFoundError) as error:
+                continue
+            if all(elem_checks):
+                seq_dirs.append(this_child_elem.absolute())
+    return seq_dirs
 
 
 def get_locus_seq_dirs():
@@ -82,10 +96,19 @@ DIRECTORY_CONFIGS = {
     'bigsky': {
         'seq': get_bigsky_seq_dirs(),
         'profile': Path(Path(__file__).parent, 'profiles', 'slurm').resolve(),
+        'sif': '/gs1/RTS/OpenOmics/SIFs/',
+        'kaiju': {
+            ''
+        }
     },
     'biowulf': {
         'seq': get_biowulf_seq_dirs(),
         'profile': Path(Path(__file__).parent, 'profiles', 'biowulf').resolve(),
+        'sif': '/data/OpenOmics/SIFs/',
+        'kaiju': {
+            'nodes': "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/nodes.dmp",
+        database            = "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/kaiju_db_nr_euk.fmi",
+        }
     }
     # TODO: locus
 }
