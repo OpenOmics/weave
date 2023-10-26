@@ -44,15 +44,17 @@ def run(args):
 
 
 def ngsqc(args):
-    # 1. get samplesheet and run directory for every cohort ✓
-    #       A. Needed info: adapters for each read, single or paired ✓
-    # 2. FastQC on raw reads, Trim adapters from read with fastp, FastQC again on trimmed merged reads ✓
-    # 3. Fastq_screen on merged trimmed reads
-    #   A. Configure bowtie databases
-    # 4. Kraken
-    # 5. Kaiju
-    # 6. MultiQC
-    # 7. Publish
+    """
+    Front-end sub-command for NGS QA/QC pipeline analysis.
+    Process all projects in all runs.
+
+    Runs -> Projects -> Samples
+
+    requires:
+        (if not specified)
+        Demux directory -> Named "$run_id + '_demux'"
+        Sequencing directory -> Configured by server in src/Dmux/config.py
+    """
     runs = utils.get_run_directories(args.rundir, seq_dir=args.seq_dir)
     utils.ensure_pe_adapters([run[1]['samplesheet'] for run in runs])
 

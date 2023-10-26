@@ -1,3 +1,9 @@
+from Dmux.config import DIRECTORY_CONFIGS, get_current_server
+
+
+server_config = DIRECTORY_CONFIGS[get_current_server()]
+
+
 rule index_annotations:
     input:
         sample_sheet    = expand("{sheet}", sheet=config['sample_sheet']),
@@ -29,7 +35,7 @@ rule fastqc_untrimmed:
         output_dir  = lambda w: config['out_to'] + "/" + w.project + "/" + config['run_ids'] + "/" + w.sid + "/fastqc_untrimmed/"
     log: config['out_to'] + "/.logs/{project}/" + config['run_ids'] + "/fastqc_untrimmed/{sid}_R{rnum}.log"
     threads: 4
-    containerized: "/data/OpenOmics/SIFs/dmux_ngsqc_0.0.1.sif"
+    containerized: server_config["sif"] + "dmux_ngsqc_0.0.1.sif"
     resources: mem_mb = 8096
     shell:
         """
@@ -46,7 +52,7 @@ rule fastqc_trimmed:
         fqreport    = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastqc_trimmed/{sid}_trimmed_R{rnum}_fastqc.zip",
     params:
         output_dir  = lambda w: config['out_to'] + "/" + w.project + "/" + config['run_ids'] + "/" + w.sid + "/fastqc_trimmed/"
-    containerized: "/data/OpenOmics/SIFs/dmux_ngsqc_0.0.1.sif"
+    containerized: server_config["sif"] + "dmux_ngsqc_0.0.1.sif"
     threads: 4
     resources: mem_mb = 8096
     log: config['out_to'] + "/.logs/{project}/" + config['run_ids'] + "/fastqc_trimmed/{sid}_R{rnum}.log"

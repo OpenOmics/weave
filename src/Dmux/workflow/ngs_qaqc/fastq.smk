@@ -1,4 +1,8 @@
 from Dmux.snk_utils import get_adapter_opts
+from Dmux.config import DIRECTORY_CONFIGS, get_current_server
+
+
+server_config = DIRECTORY_CONFIGS[get_current_server()]
 
 
 rule trim_w_fastp:
@@ -13,7 +17,7 @@ rule trim_w_fastp:
         out_read2       = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastp/{sid}_trimmed_R2.fastq.gz",
     params:
         adapters        = get_adapter_opts,
-    containerized: "/data/OpenOmics/SIFs/dmux_ngsqc_0.0.1.sif"
+    containerized: server_config["sif"] + "dmux_ngsqc_0.0.1.sif"
     threads: 4,
     resources: mem_mb = 8192,
     log: config['out_to'] + "/.logs/{project}/" + config['run_ids'] + "/fastp/{sid}.log",
@@ -41,7 +45,7 @@ rule fastq_screen:
         subset              = 1000000,
         aligner             = "bowtie2",
         output_dir          = lambda w: config['out_to'] + "/" + w.project + "/" + config['run_ids'] + "/" + w.sid + "/fastq_screen/",
-    containerized: "/data/OpenOmics/SIFs/dmux_ngsqc_0.0.1.sif"
+    containerized: server_config["sif"] + "dmux_ngsqc_0.0.1.sif"
     threads: 4,
     resources: mem_mb = 8192,
     log: config['out_to'] + "/.logs/{project}/" + config['run_ids'] + "/fastq_screen/{sid}_R{rnum}.log",
@@ -70,7 +74,7 @@ rule kaiju_annotation:
         nodes               = "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/nodes.dmp",
         names               = "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/names.dmp",
         database            = "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/kaiju_db_nr_euk.fmi",
-    containerized: "/data/OpenOmics/SIFs/dmux_ngsqc_0.0.1.sif"
+    containerized: server_config["sif"] + "dmux_ngsqc_0.0.1.sif"
     log: config['out_to'] + "/.logs/{project}/" + config['run_ids'] + "/kaiju/{sid}.log",
     threads: 24
     resources: 
@@ -100,7 +104,7 @@ rule kraken_annotation:
         kraken_log          = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/kraken/{sid}.log",
     params:
         kraken_db           = "/data/OpenOmics/references/Dmux/kraken2/k2_pluspfp_20230605"
-    containerized: "/data/OpenOmics/SIFs/dmux_ngsqc_0.0.1.sif"
+    containerized: server_config["sif"] + "dmux_ngsqc_0.0.1.sif"
     log: config['out_to'] + "/.logs/{project}/" + config['run_ids'] + "/kraken/{sid}.log",
     threads: 24
     resources: 
