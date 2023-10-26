@@ -98,7 +98,9 @@ DIRECTORY_CONFIGS = {
         'profile': Path(Path(__file__).parent, 'profiles', 'slurm').resolve(),
         'sif': '/gs1/RTS/OpenOmics/SIFs/',
         'kaiju': {
-            ''
+            "nodes": "",
+            "names": "",
+            "database": ""
         }
     },
     'biowulf': {
@@ -106,8 +108,9 @@ DIRECTORY_CONFIGS = {
         'profile': Path(Path(__file__).parent, 'profiles', 'biowulf').resolve(),
         'sif': '/data/OpenOmics/SIFs/',
         'kaiju': {
-            'nodes': "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/nodes.dmp",
-        database            = "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/kaiju_db_nr_euk.fmi",
+            "nodes": "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/nodes.dmp",
+            "names": "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/names.dmp",
+            "database":"/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/kaiju_db_nr_euk.fmi",
         }
     }
     # TODO: locus

@@ -99,8 +99,7 @@ rule kraken_annotation:
         kraken_log          = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/kraken/{sid}.log",
     params:
         kraken_db           = "/data/OpenOmics/references/Dmux/kraken2/k2_pluspfp_20230605"
-    # container: "docker://rroutsong/dmux_ngsqc:0.0.1",
-    containerized: "/data/OpenOmics/SIFs/dmux_ngsqc_0.0.1.sif"
+    containerized: server_config["sif"] + "dmux_ngsqc_0.0.1.sif"
     log: config['out_to'] + "/.logs/{project}/" + config['run_ids'] + "/kraken/{sid}.log",
     threads: 24
     resources: 
