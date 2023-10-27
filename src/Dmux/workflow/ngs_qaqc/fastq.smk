@@ -12,7 +12,7 @@ rule trim_w_fastp:
         in_read2        = config['demux_dir'] + "/{project}/{sid}_R2_001.fastq.gz",
     output:
         html            = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastp/{sid}.html",
-        json            = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastp/{sid}.json",
+        json            = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastp/{sid}_fastp.json",
         out_read1       = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastp/{sid}_trimmed_R1.fastq.gz",
         out_read2       = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastp/{sid}_trimmed_R2.fastq.gz",
     params:
@@ -67,9 +67,11 @@ rule kaiju_annotation:
         read2               = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastp/{sid}_trimmed_R2.fastq.gz",
     output:
         kaiju_report        = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/kaiju/{sid}.tsv",
+        kaiju_species       = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/kaiju/{sid}_species.tsv",
+        kaiju_phylum        = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/kaiju/{sid}_phylum.tsv",
     params:
-        # TODO: soft code these paths
         nodes               = "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/nodes.dmp",
+        names               = "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/names.dmp",
         database            = "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/kaiju_db_nr_euk.fmi",
     containerized: server_config["sif"] + "dmux_ngsqc_0.0.1.sif"
     log: config['out_to'] + "/.logs/{project}/" + config['run_ids'] + "/kaiju/{sid}.log",
@@ -87,6 +89,8 @@ rule kaiju_annotation:
         -j {input.read1} \
         -z {threads} \
         -o {output.kaiju_report}
+        kaiju2table -t {params.nodes} -n {params.names} -r species -o {output.kaiju_species} {output.kaiju_report}
+        kaiju2table -t {params.nodes} -n {params.names} -r phylum -o {output.kaiju_phylum} {output.kaiju_report}
         """
 
 

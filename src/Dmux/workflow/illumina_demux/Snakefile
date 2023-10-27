@@ -29,7 +29,6 @@ rule bcl2fastq:
     """
         BCL to FASTQ file converter
         bcl2fastq v2.20.0.422
-        Copyright (c) 2007-2017 Illumina, Inc.
     """
     input:
         run_dir                = expand("{run}", run=config['runs']),
@@ -41,7 +40,7 @@ rule bcl2fastq:
         stats                  = expand("{out_to}/Stats/Stats.json", **demux_runs_projects),
     params:
         out_dir                = expand("{out_to_directory}", out_to_directory=config['out_to']),
-    container: "docker://umccr/bcl2fastq",
+    containerized: config['resources']["sif"] + "bcl2fastq.sif"
     threads: 24
     shell: 
         r"""

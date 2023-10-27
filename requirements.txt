@@ -6,4 +6,3 @@ docxtpl
 pandas
 sample-sheet
 wheel
-snakemake

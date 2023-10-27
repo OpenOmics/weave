@@ -116,24 +116,23 @@ if __name__ == '__main__':
     #   - evaluate wheter or not to accept non-standard sample sheet names
     #   - evaluate wheter or not to accept non-standard demux directory
     parser_ngs_qc = sub_parsers.add_parser('ngsqc')
-    parser_ngs_qc.add_argument('rundir', metavar='Run directory', nargs="+", type=utils.valid_run_input, help='Full & complete run id, no wildcards or regex (format YYMMDD_INSTRUMENTID_TIME_FLOWCELLID)')
+    parser_ngs_qc.add_argument('rundir', metavar='Run directory', nargs="+", type=utils.valid_run_input, 
+                               help='Full & complete run id, no wildcards or regex (format YYMMDD_INSTRUMENTID_TIME_FLOWCELLID)')
     parser_ngs_qc.add_argument('-o', '--output', metavar='<output directory>', default=None, type=str)
     parser_ngs_qc.add_argument('-s', '--seq_dir', metavar='<sequencing directory>', default=None, type=str,
                             help='Root directory for sequencing data (defaults for biowulf/bigsky/locus), must contain directories ' + \
                             'matching run ids, if not using full paths.')
-    parser_ngs_qc.add_argument('-p', '--pretend', action='store_true',
-                            help='Dry run the demultiplexing workflow')
-    parser_ngs_qc.add_argument('-l', '--local', action='store_true',
-                            help='Execute pipeline locally without a dispatching executor')
+    parser_ngs_qc.add_argument('-p', '--pretend', action='store_true', help='Dry run the demultiplexing workflow')
+    parser_ngs_qc.add_argument('-l', '--local', action='store_true', help='Execute pipeline locally without a dispatching executor')
     parser_ngs_qc.set_defaults(func = ngsqc)
 
     # ~~~ logs subcommand ~~~
     parser_logs = sub_parsers.add_parser('logs', help='logs subcommand help')
     parser_logs.add_argument('Run', type=utils.valid_runid, 
                              help='Partial or full run id, can use wildcards')
-    parser_logs.add_argument('--before', type=str, dest='before', default=None, required=False, 
+    parser_logs.add_argument('--before', type=str, dest='before', default=None,
                              help='Only look at log results demultiplexed before this date (format MMDDYYYY)')
-    parser_logs.add_argument('--after', type=str, dest='after', default=None,  required=False, 
+    parser_logs.add_argument('--after', type=str, dest='after', default=None,
                              help='Only look at log results demultiplexed after this date (format MMDDYYYY)')
     parser_logs.set_defaults(func = logs)
 

@@ -63,19 +63,21 @@ def get_mods():
     mod_cmd = []
 
     if host == 'bigsky':
-        mod_cmd.append('source /gs1/apps/user/rmlspack/share/spack/setup-env.sh')
-        mod_cmd.append('spack load miniconda3@4.11.0')
-    else:
+        # singularity is installed to system
+        mod_cmd.append('source /gs1/RTS/OpenOmics/bin/dependencies.sh')
+    elif host == 'biowulf':
         mod_cmd.append('module purge')
         mod_cmd.append(f"module load {' '.join(mods_needed)}")
+    else:
+        raise NotImplemented('Unknown host profile: do not know how to initialize modules')
 
     return '; '.join(mod_cmd)
 
 
 def close_mods():
-    if host == 'bigsky':
-        p = system('despacktivate')
-    else:
+    if host == 'biowulf':
         p = system('module purge')
+    elif host == 'bigsky':
+        p = system('spack unload -a')
     return int(p) == 0
     
