@@ -7,11 +7,9 @@ import re
 import json
 import os
 import yaml
-import time
 import xml.etree.ElementTree as ET
-from shutil import which
 from Dmux.files import parse_samplesheet
-from Dmux.config import DIRECTORY_CONFIGS, SNAKEFILE, get_current_server
+from Dmux.config import SNAKEFILE, DIRECTORY_CONFIGS, get_current_server
 from Dmux.modules import get_mods, init_mods, close_mods
 from os import access as check_access, W_OK
 from argparse import ArgumentTypeError
@@ -49,9 +47,19 @@ def mk_or_pass_dirs(*dirs):
 
 def base_config(keys):
     this_config = {}
+    this_config['resources'] = get_resource_config()
     for elem_key in keys:
         this_config[elem_key] = []
     return this_config
+
+
+def get_resource_config():
+    resource_dir = Path(__file__, '..', 'config')
+    resource_json = Path(resource_dir, get_current_server() + '.json').resolve()
+
+    if not resource_json.exists(): raise FileNotFoundError('Unknown server resource configuration')
+
+    return json.load(open(resource_json))
 
 
 def month2fiscalq(month):
@@ -91,7 +99,7 @@ def valid_runid(id_to_check):
     return id_to_check
 
 def valid_run_input(run):
-    regex_run_id = r"(\d{6})_([A-Z]{2}\d{6})_(\d{4})_([A-Z]{10})"
+    regex_run_id = r"(\d{6})_([A-Z]{2}\d{6})_(\d{4})_([A-Z0-9]{10})"
     match_id = re.search(regex_run_id, run, re.MULTILINE)
     if match_id:
         return run
@@ -152,7 +160,7 @@ def valid_run_output(output_directory, dry_run=False):
         output_directory.mkdir(parents=True, mode=0o765)
     else:
         raise FileExistsError(f'Output directory, {output_directory}' +
-                               'exists already. Select alternative or delete existing.')
+                               ' exists already. Select alternative or delete existing.')
     if not check_access(output_directory, W_OK):
         raise PermissionError(f'Can not write to output directory {output_directory}')
     return output_directory
@@ -201,7 +209,7 @@ def exec_demux_pipeline(configs, dry_run=False, local=False):
     mk_or_pass_dirs(*_dirs)
 
     for i in range(0, len(configs['projects'])):
-        this_config = {k: v[i] for k, v in configs.items()}
+        this_config = {k: (v[i] if k != 'resources' else v) for k, v in configs.items()}
         this_config.update(profile_config)
         config_file = Path(this_config['out_to'], '.config', f'config_job_{str(i)}.json').absolute()
         json.dump(this_config, open(config_file, 'w'), cls=PathJSONEncoder, indent=4)
@@ -227,7 +235,7 @@ def exec_demux_pipeline(configs, dry_run=False, local=False):
             proc = Popen(this_cmd, env=top_env)
             proc.communicate()
         else:
-            print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC}Executing demultiplexing of run{esc_colors.BOLD}"
+            print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC}Executing demultiplexing of run {esc_colors.BOLD}"
                   f"{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
             exec_snakemake(this_cmd, env=top_env, cwd=str(Path(configs['out_to'][i]).absolute()))
                
@@ -312,7 +320,8 @@ def exec_ngsqc_pipeline(configs, dry_run=False, local=False):
             this_cmd.extend(["--profile", f"{fastq_demux_profile}"])
 
         if dry_run:
-            print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC} {esc_colors.UNDERLINE}Dry run{esc_colors.ENDC} demultiplexing of run {esc_colors.BOLD}{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
+            print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC} {esc_colors.UNDERLINE}Dry run{esc_colors.ENDC} " + \
+                   "demultiplexing of run {esc_colors.BOLD}{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
             this_cmd.extend(['--dry-run', '-p'])
         else:
             print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC}Executing ngs qc pipeline for run {esc_colors.BOLD}"
@@ -322,3 +331,4 @@ def exec_ngsqc_pipeline(configs, dry_run=False, local=False):
         exec_snakemake(this_cmd, env=top_env, cwd=str(Path(configs['out_to'][i]).absolute()))
 
     close_mods()
+

@@ -92,7 +92,7 @@ rule multiqc_report:
         demux_dir       = config['demux_dir'],
         output_dir      = config['out_to'] + "/" + config['projects'] + "/" + config['run_ids'] + "/multiqc/",
         report_title    = f"Run: {config['run_ids']}, Project: {config['projects']}",
-    containerized: "/data/OpenOmics/SIFs/dmux_ngsqc_0.0.1.sif"
+    containerized: server_config["sif"] + "dmux_ngsqc_0.0.1.sif"
     threads: 4
     resources: mem_mb = 8096
     log: config['out_to'] + "/.logs/" + config['projects'] + "/" + config['run_ids'] + "/multiqc/multiqc.log"

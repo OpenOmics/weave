@@ -70,7 +70,6 @@ rule kaiju_annotation:
         kaiju_species       = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/kaiju/{sid}_species.tsv",
         kaiju_phylum        = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/kaiju/{sid}_phylum.tsv",
     params:
-        # TODO: soft code these paths
         nodes               = "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/nodes.dmp",
         names               = "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/names.dmp",
         database            = "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/kaiju_db_nr_euk.fmi",
