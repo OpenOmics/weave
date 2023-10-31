@@ -33,10 +33,10 @@ def run(args):
         config['bcl_files'].append(list(Path(rundir).rglob('*.bcl.*')))
         out_to = Path(args.output, f"{sample_sheet.Header['Experiment Name']}_demux") if args.output \
             else Path(rundir, f"{sample_sheet.Header['Experiment Name']}_demux")
-        utils.valid_run_output(out_to, dry_run=args.pretend)
+        utils.valid_run_output(out_to, dry_run=args.dry_run)
         config['out_to'].append(out_to)
 
-    utils.exec_demux_pipeline(config, dry_run=args.pretend, local=args.local)
+    utils.exec_demux_pipeline(config, dry_run=args.dry_run, local=args.local)
 
     # if qc not disabled:
     #   - mutate config into structs/data appropriate for `args`
@@ -80,7 +80,7 @@ def ngsqc(args):
         
         configs['out_to'].append(out_base)
 
-    utils.exec_ngsqc_pipeline(configs, dry_run=args.pretend, local=args.local)
+    utils.exec_ngsqc_pipeline(configs, dry_run=args.dry_run, local=args.local)
 
 
 def logs(args):
@@ -103,7 +103,7 @@ if __name__ == '__main__':
                             'matching run ids, if not using full paths.')
     parser_run.add_argument('-o', '--output', metavar='<output directory>', default=None, type=str, 
                             help='Top-level output directory for demultiplexing data (defaults to input directory + runid + "_demux")')
-    parser_run.add_argument('-p', '--pretend', action='store_true',
+    parser_run.add_argument('-d', '--dry-run', action='store_true',
                             help='Dry run the demultiplexing workflow')
     parser_run.add_argument('-l', '--local', action='store_true',
                             help='Execute pipeline locally without a dispatching executor')
@@ -119,7 +119,7 @@ if __name__ == '__main__':
     parser_ngs_qc.add_argument('-s', '--seq_dir', metavar='<sequencing directory>', default=None, type=str,
                             help='Root directory for sequencing data (defaults for biowulf/bigsky/locus), must contain directories ' + \
                             'matching run ids, if not using full paths.')
-    parser_ngs_qc.add_argument('-p', '--pretend', action='store_true',
+    parser_ngs_qc.add_argument('-d', '--dry-run', action='store_true',
                             help='Dry run the demultiplexing workflow')
     parser_ngs_qc.add_argument('-l', '--local', action='store_true',
                             help='Execute pipeline locally without a dispatching executor')
