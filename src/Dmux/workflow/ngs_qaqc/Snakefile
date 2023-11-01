@@ -4,8 +4,10 @@ from sample_sheet import SampleSheet
 envvars: "SNK_CONFIG"
 configfile: os.environ['SNK_CONFIG']
 
+
 ruleorder:
-    fastqc_untrimmed > index_annotations > trim_w_fastp > fastq_screen
+    fastqc_untrimmed > trim_w_fastp > fastqc_trimmed
+
 
 rule all:
     input:
