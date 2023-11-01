@@ -1,4 +1,3 @@
-from Dmux.snk_utils import get_adapter_opts
 from Dmux.config import DIRECTORY_CONFIGS, get_current_server
 
 
@@ -15,8 +14,6 @@ rule trim_w_fastp:
         json            = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastp/{sid}_fastp.json",
         out_read1       = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastp/{sid}_trimmed_R1.fastq.gz",
         out_read2       = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastp/{sid}_trimmed_R2.fastq.gz",
-    params:
-        adapters        = get_adapter_opts,
     containerized: server_config["sif"] + "dmux_ngsqc_0.0.1.sif"
     threads: 4,
     resources: mem_mb = 8192,
@@ -24,7 +21,7 @@ rule trim_w_fastp:
     shell:
         """
         fastp \
-        {params.adapters} \
+        --detect_adapter_for_pe \
         --in1 {input.in_read1} --in2 {input.in_read2} \
         --out1 {output.out_read1} \
         --out2 {output.out_read2} \

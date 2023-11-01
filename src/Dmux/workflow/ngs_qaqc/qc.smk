@@ -4,30 +4,9 @@ from Dmux.config import DIRECTORY_CONFIGS, get_current_server
 server_config = DIRECTORY_CONFIGS[get_current_server()]
 
 
-rule index_annotations:
-    input:
-        sample_sheet    = expand("{sheet}", sheet=config['sample_sheet']),
-        read            = expand("{demux_dir}/{project}/{sid}_R{rnum}_001.fastq.gz", demux_dir=config['demux_dir'], \
-                                 project=config['projects'], sid=config['sids'], rnum=config['rnums']),
-    output:
-        fastqc_adapters = expand("{outdir}/{project}/{rid}/fastqc_adapters.txt", outdir=config['out_to'], 
-        project=config['projects'], \
-                                 rid=config['run_ids'])
-    log: config['out_to'] + "/.logs/index_annotations.log"
-    localrule: True
-    run:
-        shell(f"mkdir -p {config['out_to']}/{config['run_ids']}")
-        ss = SampleSheet(config['sample_sheet'])
-        for i, samp in enumerate(ss.samples, start=1):
-            shell(f"echo \"{samp.Sample_ID}_R1\t{samp.index}\" >> {config['out_to']}/{config['projects']}/{config['run_ids']}/fastqc_adapters.txt")
-            if ss.is_paired_end:
-                shell(f"echo \"{samp.Sample_ID}_R2\t{samp.index2}\" >> {config['out_to']}/{config['projects']}/{config['run_ids']}/fastqc_adapters.txt")
-
-
 rule fastqc_untrimmed:
     input:
         samples     = config['demux_dir'] + "/{project}/{sid}_R{rnum}_001.fastq.gz",
-        adapters    = config['out_to'] + "/{project}/" + config['run_ids'] + "/fastqc_adapters.txt",
     output:   
         html        = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastqc_untrimmed/{sid}_R{rnum}_001_fastqc.html",
         fqreport    = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastqc_untrimmed/{sid}_R{rnum}_001_fastqc.zip",
@@ -40,7 +19,7 @@ rule fastqc_untrimmed:
     shell:
         """
         mkdir -p {params.output_dir}
-        fastqc -o {params.output_dir} -a {input.adapters} -t {threads} {input.samples}
+        fastqc -o {params.output_dir} -t {threads} {input.samples}
         """
    
 
