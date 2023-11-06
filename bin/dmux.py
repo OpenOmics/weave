@@ -125,15 +125,10 @@ if __name__ == '__main__':
     parser_ngs_qc.add_argument('-s', '--seq_dir', metavar='<sequencing directory>', default=None, type=str,
                             help='Root directory for sequencing data (defaults for biowulf/bigsky/locus), must contain directories ' + \
                             'matching run ids, if not using full paths.')
-<<<<<<< HEAD
     parser_ngs_qc.add_argument('-d', '--dry-run', action='store_true',
                             help='Dry run the demultiplexing workflow')
     parser_ngs_qc.add_argument('-l', '--local', action='store_true',
                             help='Execute pipeline locally without a dispatching executor')
-=======
-    parser_ngs_qc.add_argument('-p', '--pretend', action='store_true', help='Dry run the demultiplexing workflow')
-    parser_ngs_qc.add_argument('-l', '--local', action='store_true', help='Execute pipeline locally without a dispatching executor')
->>>>>>> refs/remotes/origin/master_job_and_bigsky
     parser_ngs_qc.set_defaults(func = ngsqc)
 
     # ~~~ logs subcommand ~~~
