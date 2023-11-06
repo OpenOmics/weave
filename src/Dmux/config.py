@@ -110,5 +110,4 @@ DIRECTORY_CONFIGS = {
             'database': "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/kaiju_db_nr_euk.fmi",
         }
     }
-    # TODO: locus
 }
