@@ -8,14 +8,15 @@ import json
 import os
 import yaml
 import xml.etree.ElementTree as ET
-from profiles.files import parse_samplesheet
-from profiles.config import SNAKEFILE, DIRECTORY_CONFIGS, get_current_server
-from profiles.modules import get_mods, init_mods, close_mods
 from os import access as check_access, W_OK
 from argparse import ArgumentTypeError
 from dateutil.parser import parse as date_parser
 from subprocess import Popen, PIPE
 from pathlib import Path, PurePath
+# from https://github.com/OpenOmics/profiles
+from utils.src.files import parse_samplesheet
+from utils.src.config import SNAKEFILE, DIRECTORY_CONFIGS, get_current_server
+from utils.src.modules import get_mods, init_mods, close_mods
 
 
 class esc_colors:
