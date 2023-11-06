@@ -1,4 +1,4 @@
-from Dmux.config import DIRECTORY_CONFIGS, get_current_server
+from scripts.config import DIRECTORY_CONFIGS, get_current_server
 
 
 server_config = DIRECTORY_CONFIGS[get_current_server()]

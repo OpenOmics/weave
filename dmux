@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 import argparse
 from pathlib import Path
-from Dmux import utils
+from scripts import utils
 
 main_parser = argparse.ArgumentParser(prog='dmux')
 sub_parser = main_parser.add_subparsers(help='sub-command help')

@@ -14,7 +14,6 @@ demux_runs_projects = {
     'rnums': config['rnums'],
     'reads_out': config['reads_out']
 }
-path_resolve = lambda x: os.path.abspath(os.path.expanduser(os.path.expandvars(str(x))))
 
 
 rule all:

@@ -1,5 +1,4 @@
 import os
-from sample_sheet import SampleSheet
 
 
 envvars: "SNK_CONFIG"
@@ -13,7 +12,6 @@ ruleorder:
 rule all:
     input:
         # fastqc on untrimmed reads
-
         expand("{out_dir}/{project}/{rid}/{sids}/fastqc_untrimmed/{sids}_R{rnum}_001_fastqc.zip", out_dir=config['out_to'], 
                project=config['projects'], rid=config['run_ids'], sids=config['sids'], rnum=config['rnums']),
         # fastqc on trimmed reads
