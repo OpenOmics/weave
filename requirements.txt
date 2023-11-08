@@ -2,3 +2,5 @@ snakemake
 requests
 pandas
 wheel
+terminaltables
+labkey
