@@ -1,0 +1,20 @@
+{
+    "sif": "/data/OpenOmics/SIFs/",
+    "mounts": {
+        "kaiju": {
+            "to": "/opt/kaiju",
+            "from": "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10",
+            "mode": "ro"
+        },
+        "kraken2" : {
+            "to": "/opt/kraken2",
+            "from": "/data/OpenOmics/references/Dmux/kraken2/k2_pluspfp_20230605",
+            "mode": "ro"
+        }, 
+        "fastq_screen" : {
+            "to": "/fdb/fastq_screen/FastQ_Screen_Genomes",
+            "from": "/fdb/fastq_screen/FastQ_Screen_Genomes",
+            "mode": "ro"
+        }
+    }
+}
