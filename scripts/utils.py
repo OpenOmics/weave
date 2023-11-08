@@ -7,16 +7,16 @@ import re
 import json
 import os
 import yaml
+import sys
 import xml.etree.ElementTree as ET
 from os import access as check_access, W_OK
 from argparse import ArgumentTypeError
 from dateutil.parser import parse as date_parser
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, STDOUT
 from pathlib import Path, PurePath
-# from https://github.com/OpenOmics/profiles
-from utils.src.files import parse_samplesheet
-from utils.src.config import SNAKEFILE, DIRECTORY_CONFIGS, get_current_server
-from utils.src.modules import get_mods, init_mods, close_mods
+from .files import parse_samplesheet
+from .config import SNAKEFILE, DIRECTORY_CONFIGS, get_current_server
+from .modules import get_mods, init_mods, close_mods
 
 
 class esc_colors:
@@ -55,10 +55,11 @@ def base_config(keys):
 
 
 def get_resource_config():
-    resource_dir = Path(__file__, '..', 'config')
+    resource_dir = Path(__file__, '..', '..', 'config').absolute()
     resource_json = Path(resource_dir, get_current_server() + '.json').resolve()
 
-    if not resource_json.exists(): raise FileNotFoundError('Unknown server resource configuration')
+    if not resource_json.exists():
+        return None
 
     return json.load(open(resource_json))
 
@@ -159,9 +160,7 @@ def valid_run_output(output_directory, dry_run=False):
     output_directory = Path(output_directory).absolute()
     if not output_directory.exists():
         output_directory.mkdir(parents=True, mode=0o765)
-    else:
-        raise FileExistsError(f'Output directory, {output_directory}' +
-                               ' exists already. Select alternative or delete existing.')
+    
     if not check_access(output_directory, W_OK):
         raise PermissionError(f'Can not write to output directory {output_directory}')
     return output_directory
@@ -185,15 +184,26 @@ def exec_snakemake(popen_cmd, env=None, cwd=None):
     else:
         popen_kwargs['cwd'] = str(Path.cwd())
 
-    proc = Popen(popen_cmd, **popen_kwargs)
-    proc.communicate()
-    return proc.returncode == 0
+    proc = Popen(popen_cmd, stdout=PIPE, stderr=STDOUT, **popen_kwargs)
+
+    parent_jobid = None
+    for line in proc.stdout:
+        lutf8 = line.decode('utf-8')
+        jid_search = re.search(r"external jobid \'(\d+)\'", lutf8, re.MULTILINE)
+        if jid_search:
+            parent_jobid = int(jid_search.group(1))
+        sys.stdout.write(lutf8)
+
+    snakemake_run_out, _ = proc.communicate()
+
+    return proc.returncode == 0, parent_jobid
 
 
 # ~~~ for `run` subcommand ~~~
 def exec_demux_pipeline(configs, dry_run=False, local=False):
     init_mods_proc = init_mods()
     assert init_mods_proc, f"Failed to initialize modules: {get_mods()}"
+    jobids = [] 
     # TODO: when or if other instrument profiles are needed, 
     #       we will need to expand this portion to 
     #       determine instrument type/brand by some method.
@@ -238,10 +248,12 @@ def exec_demux_pipeline(configs, dry_run=False, local=False):
         else:
             print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC}Executing demultiplexing of run {esc_colors.BOLD}"
                   f"{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
-            exec_snakemake(this_cmd, env=top_env, cwd=str(Path(configs['out_to'][i]).absolute()))
-               
+            jobgood, parent_jobid = exec_snakemake(this_cmd, env=top_env, cwd=str(Path(configs['out_to'][i]).absolute()))
+            assert jobgood, 'job run good'
+            jobids.append(parent_jobid)
         
     close_mods()
+    return jobids
 
 
 def base_run_config():
@@ -251,26 +263,54 @@ def base_run_config():
 
 # ~~~ for `ngsqc` subcommand ~~~
 def base_qc_config():
-    DEFAULT_CONFIG_KEYS = ('sample_sheet', 'run_ids', 'projects', 'samples', 'sids', 'out_to', 'demux_dir', 'rnums')
+    DEFAULT_CONFIG_KEYS = ('sample_sheet', 'run_ids', 'projects', 'samples', 'sids', 'out_to', 'demux_dir', 'parent_jid', 'rnums')
     return base_config(DEFAULT_CONFIG_KEYS)
+
+def find_demux_dir(run_dir):
+    demux_stat_files = [x for x in Path(run_dir).rglob('DemultiplexingStats.xml')]
+    import ipdb; ipdb.set_trace()
+
+    if len(demux_stat_files) != 1:
+        raise FileNotFoundError
+    
+    return Path(demux_stat_files[0], '..').absolute()
 
 
 def get_ngsqc_mounts(*extras):
-    if get_current_server() == 'biowulf':
-        mount_binds = [
-            "/fdb/fastq_screen/FastQ_Screen_Genomes",
-            "/data/OpenOmics/references/Dmux/kraken2/k2_pluspfp_20230605",
-            "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10",
-        ]
-        if extras:
-            for extra in extras:
-                if not Path(extra).exists():
-                    raise FileNotFoundError(f"Can't mount {str(extra)}, it doesn't exist!")
-            mount_binds.extend(extras)
-    else:
-        raise NotImplementedError('Have not implemented this on any server besides biowulf')
-    mount_binds = [str(Path(x).resolve()) + ':' + str(x) + ':rw' for x in mount_binds]
-    return "\'-B " + ','.join([str(x) for x in mount_binds]) + "\'"
+    mount_binds = []
+    resources = get_resource_config()
+
+    if resources:
+        for this_mount_label, this_mount_attrs in resources['mounts'].items():
+            this_mount_signature = this_mount_attrs['from'] + ':' + this_mount_attrs['to'] + ':' + this_mount_attrs['mode'] 
+            mount_binds.append(this_mount_signature)
+
+    if extras:
+        for extra in extras:
+            if not Path(extra).exists():
+                raise FileNotFoundError(f"Can't mount {str(extra)}, it doesn't exist!")
+        mount_binds.extend(extras)
+
+    mounts = []
+    for bind in mount_binds:
+        if ':' in str(bind):
+            bind = str(bind)
+            bind = bind.split(':')
+            if len(bind) >= 2:
+                file_from = str(Path(bind[0]).resolve())
+                file_to = str(Path(bind[1]).absolute())
+
+            mode = str(bind[2]) if len(bind) >= 3 else 'rw'
+
+            if mode not in ('ro', 'rw'):
+                mode = 'rw'
+        else:
+            if not Path(bind).exists():
+                raise FileNotFoundError(f"Can't mount {str(bind)}, it doesn't exist!")
+            file_to, file_from, mode = str(bind), str(bind), 'rw'
+        mounts.append(file_from + ':' + file_to + ':' + mode)
+
+    return "\'-B " + ','.join(mounts) + "\'"
 
 
 def ensure_pe_adapters(samplesheets):
@@ -301,21 +341,30 @@ def exec_ngsqc_pipeline(configs, dry_run=False, local=False):
     _dirs = top_singularity_dirs + top_config_dirs
     mk_or_pass_dirs(*_dirs)
 
-    for i in range(0, len(configs['projects'])):
-        this_config = {k: v[i] for k, v in configs.items()}
+    for i in range(0, len(configs['projects'])): 
+        this_config = {k: (v[i] if k != 'resources' else v) for k, v in configs.items()}
         this_config.update(profile_config)
         singularity_binds = get_ngsqc_mounts(Path(this_config['out_to']).absolute(), Path(this_config['demux_dir']).absolute())
         config_file = Path(this_config['out_to'], '.config', f'config_job_{str(i)}.json').absolute()
         json.dump(this_config, open(config_file, 'w'), cls=PathJSONEncoder, indent=4)
         top_env = {}
+        if 'parent_jid' in this_config and this_config['parent_jid'] is not None:
+            top_env['SLURM_DEP_PARENT_JOB'] = str(this_config['parent_jid'])
         top_env['PATH'] = os.environ["PATH"]
         top_env['SNK_CONFIG'] = str(config_file.absolute())
         top_env['LOAD_MODULES'] = get_mods()
         top_env['SINGULARITY_CACHEDIR'] = str(Path(this_config['out_to'], '.singularity').absolute())
         this_cmd = [
-            "snakemake", "--use-singularity", "--singularity-args", singularity_binds, 
-            "-s", f"{snake_file}", "--profile", fastq_demux_profile
+            "snakemake",
+            "-pr",
+            "--use-singularity", 
+            "--rerun-incomplete", 
+            "--rerun-triggers", "mtime",
+            "-s", snake_file, 
+            "--profile", fastq_demux_profile
         ]
+        if singularity_binds:
+            this_cmd.extend(["--singularity-args", singularity_binds])
 
         if not local:
             this_cmd.extend(["--profile", f"{fastq_demux_profile}"])

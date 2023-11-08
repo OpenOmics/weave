@@ -11,25 +11,27 @@ ruleorder:
 
 rule all:
     input:
-        # fastqc on untrimmed reads
-        expand("{out_dir}/{project}/{rid}/{sids}/fastqc_untrimmed/{sids}_R{rnum}_001_fastqc.zip", out_dir=config['out_to'], 
-               project=config['projects'], rid=config['run_ids'], sids=config['sids'], rnum=config['rnums']),
-        # fastqc on trimmed reads
-        expand("{out_dir}/{project}/{rid}/{sids}/fastqc_trimmed/{sids}_trimmed_R{rnum}_fastqc.zip", out_dir=config['out_to'], 
-               sids=config['sids'], project=config['projects'], rid=config['run_ids'], rnum=config['rnums']),
-        # fastp trimming metrics
-        expand("{out_dir}/{project}/{rid}/{sids}/fastp/{sids}_trimmed_R{rnum}.fastq.gz", out_dir=config['out_to'], 
-               sids=config['sids'], project=config['projects'], rid=config['run_ids'], rnum=config['rnums']),
-        # fastq screen
-        expand("{out_dir}/{project}/{rid}/{sids}/fastq_screen/{sids}_trimmed_R{rnum}_screen.html", out_dir=config['out_to'], 
-               sids=config['sids'], rnum=config['rnums'], rid=config['run_ids'], project=config['projects']),
-        # kraken2
-        expand("{out_dir}/{project}/{rid}/{sids}/kraken/{sids}.tsv", out_dir=config['out_to'], sids=config['sids'], 
-               project=config['projects'], rid=config['run_ids']),
-        # kaiju
-        expand("{out_dir}/{project}/{rid}/{sids}/kaiju/{sids}.tsv", out_dir=config['out_to'], sids=config['sids'], 
-               project=config['projects'], rid=config['run_ids']),
-        f"{config['out_to']}/{config['projects']}/{config['run_ids']}/multiqc/multiqc_report.html",
+       # fastqc on untrimmed reads
+       expand("{out_dir}/{project}/{rid}/{sids}/fastqc_untrimmed/{sids}_R{rnum}_001_fastqc.zip", out_dir=config['out_to'], 
+              project=config['projects'], rid=config['run_ids'], sids=config['sids'], rnum=config['rnums']),
+       # fastqc on trimmed reads
+       expand("{out_dir}/{project}/{rid}/{sids}/fastqc_trimmed/{sids}_trimmed_R{rnum}_fastqc.zip", out_dir=config['out_to'], 
+              sids=config['sids'], project=config['projects'], rid=config['run_ids'], rnum=config['rnums']),
+       # fastp trimming metrics
+       expand("{out_dir}/{project}/{rid}/{sids}/fastp/{sids}_trimmed_R{rnum}.fastq.gz", out_dir=config['out_to'], 
+              sids=config['sids'], project=config['projects'], rid=config['run_ids'], rnum=config['rnums']),
+       # fastq screen
+       expand("{out_dir}/{project}/{rid}/{sids}/fastq_screen/{sids}_trimmed_R{rnum}_screen.html", out_dir=config['out_to'], 
+              sids=config['sids'], rnum=config['rnums'], rid=config['run_ids'], project=config['projects']),
+       # kraken2
+       expand("{out_dir}/{project}/{rid}/{sids}/kraken/{sids}.tsv", out_dir=config['out_to'], sids=config['sids'], 
+              project=config['projects'], rid=config['run_ids']),
+       # kaiju
+       expand("{out_dir}/{project}/{rid}/{sids}/kaiju/{sids}.tsv", out_dir=config['out_to'], sids=config['sids'], 
+              project=config['projects'], rid=config['run_ids']),
+       # multiqc
+       expand("{out_dir}/{project}/{rid}/multiqc/Run-{rid}-Project-{project}_multiqc_report.html", out_dir=config['out_to'],
+              project=config['projects'], rid=config['run_ids'])
 
 
 include: "fastq.smk"

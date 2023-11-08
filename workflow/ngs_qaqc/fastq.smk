@@ -1,12 +1,5 @@
-from scripts.config import DIRECTORY_CONFIGS, get_current_server
-
-
-server_config = DIRECTORY_CONFIGS[get_current_server()]
-
-
 rule trim_w_fastp:
     input:
-        adapters        = config['out_to'] + "/{project}/" + config['run_ids'] + "/fastqc_adapters.txt",
         in_read1        = config['demux_dir'] + "/{project}/{sid}_R1_001.fastq.gz",
         in_read2        = config['demux_dir'] + "/{project}/{sid}_R2_001.fastq.gz",
     output:
@@ -14,7 +7,7 @@ rule trim_w_fastp:
         json            = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastp/{sid}_fastp.json",
         out_read1       = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastp/{sid}_trimmed_R1.fastq.gz",
         out_read2       = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/fastp/{sid}_trimmed_R2.fastq.gz",
-    containerized: server_config["sif"] + "dmux_ngsqc_0.0.1.sif"
+    containerized: config["resources"]["sif"] + "dmux_ngsqc_0.0.1.sif"
     threads: 4,
     resources: mem_mb = 8192,
     log: config['out_to'] + "/.logs/{project}/" + config['run_ids'] + "/fastp/{sid}.log",
@@ -42,7 +35,7 @@ rule fastq_screen:
         subset              = 1000000,
         aligner             = "bowtie2",
         output_dir          = lambda w: config['out_to'] + "/" + w.project + "/" + config['run_ids'] + "/" + w.sid + "/fastq_screen/",
-    containerized: server_config["sif"] + "dmux_ngsqc_0.0.1.sif"
+    containerized: config["resources"]["sif"] + "dmux_ngsqc_0.0.1.sif"
     threads: 4,
     resources: mem_mb = 8192,
     log: config['out_to'] + "/.logs/{project}/" + config['run_ids'] + "/fastq_screen/{sid}_R{rnum}.log",
@@ -67,15 +60,14 @@ rule kaiju_annotation:
         kaiju_species       = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/kaiju/{sid}_species.tsv",
         kaiju_phylum        = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/kaiju/{sid}_phylum.tsv",
     params:
-        nodes               = "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/nodes.dmp",
-        names               = "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/names.dmp",
-        database            = "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10/kaiju_db_nr_euk.fmi",
-    containerized: server_config["sif"] + "dmux_ngsqc_0.0.1.sif"
+        nodes               = config["resources"]["mounts"]["kaiju"]["to"] + "/nodes.dmp",
+        names               = config["resources"]["mounts"]["kaiju"]["to"] + "/names.dmp",
+        database            = config["resources"]["mounts"]["kaiju"]["to"] + "/kaiju_db_nr_euk.fmi",
+    containerized: config["resources"]["sif"] + "dmux_ngsqc_0.0.1.sif"
     log: config['out_to'] + "/.logs/{project}/" + config['run_ids'] + "/kaiju/{sid}.log",
     threads: 24
     resources: 
         mem_mb = 220000,
-        slurm_partition = 'norm',
         runtime = 60*24*2
     shell:
         """
@@ -99,13 +91,12 @@ rule kraken_annotation:
         kraken_report       = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/kraken/{sid}.tsv",
         kraken_log          = config['out_to'] + "/{project}/" + config['run_ids'] + "/{sid}/kraken/{sid}.log",
     params:
-        kraken_db           = "/data/OpenOmics/references/Dmux/kraken2/k2_pluspfp_20230605"
-    containerized: server_config["sif"] + "dmux_ngsqc_0.0.1.sif"
+        kraken_db           = config["resources"]["mounts"]["kraken2"]["to"]
+    containerized: config["resources"]["sif"] + "dmux_ngsqc_0.0.1.sif"
     log: config['out_to'] + "/.logs/{project}/" + config['run_ids'] + "/kraken/{sid}.log",
     threads: 24
     resources: 
         mem_mb = 220000,
-        slurm_partition = 'norm',
         runtime = 60*24*2
     shell:
         """

@@ -19,9 +19,10 @@ demux_runs_projects = {
 rule all:
     input:
         # ~~ illumnia demultiplexing ~~
-        expand("{run}", run=config['runs']),
+        expand("{run}", **demux_runs_projects),
         expand("{out_to}/{project}/{reads_out}", **demux_runs_projects),
-        expand("{out_to}/Stats/Stats.json", **demux_runs_projects)
+        expand("{out_to}/Stats/Stats.json", **demux_runs_projects),
+        expand("{out_to}/.DEMUX_COMPLETE", **demux_runs_projects)
         
 
 rule bcl2fastq:
@@ -30,16 +31,17 @@ rule bcl2fastq:
         bcl2fastq v2.20.0.422
     """
     input:
-        run_dir                = expand("{run}", run=config['runs']),
+        run_dir                = expand("{run}", **demux_runs_projects),
         binary_base_calls      = expand("{files}", files=config['bcl_files']),
-        samplesheets           = expand("{run}/SampleSheet.csv", run=config['runs'])
+        samplesheets           = expand("{run}/SampleSheet.csv", **demux_runs_projects)
     output:
         seq_data               = expand("{out_to}/{project}/{reads_out}", **demux_runs_projects),
         undetermined           = expand("{out_to}/Undetermined_S0_R{rnums}_001.fastq.gz", **demux_runs_projects),
         stats                  = expand("{out_to}/Stats/Stats.json", **demux_runs_projects),
+        breadcrumb             = expand("{out_to}/.DEMUX_COMPLETE", **demux_runs_projects),
     params:
         out_dir                = expand("{out_to_directory}", out_to_directory=config['out_to']),
-    containerized: config['resources']["sif"] + "bcl2fastq.sif"
+    containerized: config["resources"]["sif"] + "bcl2fastq.sif"
     threads: 24
     shell: 
         r"""
@@ -48,4 +50,5 @@ rule bcl2fastq:
             --min-log-level=INFO \
             -r {threads} -p {threads} -w {threads} \
             --no-lane-splitting -o {params.out_dir}
+            touch {params.out_dir}/.DEMUX_COMPLETE
         """

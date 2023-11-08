@@ -1,0 +1,4 @@
+snakemake
+requests
+pandas
+wheel
