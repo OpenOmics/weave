@@ -342,7 +342,7 @@ def exec_ngsqc_pipeline(configs, dry_run=False, local=False):
     mk_or_pass_dirs(*_dirs)
 
     for i in range(0, len(configs['projects'])): 
-        this_config = {k: (v[i] if k != 'resources' else v) for k, v in configs.items()}
+        this_config = {k: (v[i] if k != 'resources' else v) for k, v in configs.items() if v}
         this_config.update(profile_config)
         singularity_binds = get_ngsqc_mounts(Path(this_config['out_to']).absolute(), Path(this_config['demux_dir']).absolute())
         config_file = Path(this_config['out_to'], '.config', f'config_job_{str(i)}.json').absolute()
