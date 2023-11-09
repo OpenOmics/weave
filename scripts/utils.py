@@ -348,7 +348,7 @@ def exec_ngsqc_pipeline(configs, dry_run=False, local=False):
         config_file = Path(this_config['out_to'], '.config', f'config_job_{str(i)}.json').absolute()
         json.dump(this_config, open(config_file, 'w'), cls=PathJSONEncoder, indent=4)
         top_env = {}
-        if 'parent_jid' in this_config and this_config['parent_jid'] is not None:
+        if 'parent_jid' in this_config and this_config['parent_jid'] is not None and not local:
             top_env['SLURM_DEP_PARENT_JOB'] = str(this_config['parent_jid'])
         top_env['PATH'] = os.environ["PATH"]
         top_env['SNK_CONFIG'] = str(config_file.absolute())

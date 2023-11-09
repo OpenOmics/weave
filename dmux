@@ -42,8 +42,12 @@ def run(args):
         demux_runs = runs
         for i, (rundir, run_infos) in enumerate(demux_runs):
             run_infos['demux_dir'] = config['out_to'][i]
-            run_infos['parent_jid'] = jids[i]
+            if args.local:
+                run_infos['parent_jid'] = None
+            else
+                run_infos['parent_jid'] = jids[i]
         ngsqc(args, demux_runs=demux_runs)
+
 
 
 def ngsqc(args, demux_runs=False):
@@ -83,7 +87,7 @@ def ngsqc(args, demux_runs=False):
         sample_sheet = run_info['samplesheet']
         configs['sample_sheet'].append(str(sample_sheet.path.absolute()))
         configs['projects'].append(sample_sheet.samples[0].Sample_Project)
-        if 'parent_jid' in run_info:
+        if 'parent_jid' in run_info and not args.local:
             configs['parent_jid'].append(run_info['parent_jid'])
         sample_list = [
             dict(sid=sample.Sample_ID+'_S'+str(i), r1_adapter=sample.index, r2_adapter=sample.index2) 
