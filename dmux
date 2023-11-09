@@ -42,12 +42,8 @@ def run(args):
         demux_runs = runs
         for i, (rundir, run_infos) in enumerate(demux_runs):
             run_infos['demux_dir'] = config['out_to'][i]
-            if args.local:
-                run_infos['parent_jid'] = None
-            else
-                run_infos['parent_jid'] = jids[i]
+            run_infos['parent_jid'] = None if args.local else jids[i]
         ngsqc(args, demux_runs=demux_runs)
-
 
 
 def ngsqc(args, demux_runs=False):
