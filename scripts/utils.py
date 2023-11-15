@@ -81,7 +81,7 @@ def valid_run_input(run):
     raise ArgumentTypeError("Invalid run value, neither an id or existing path: " + str(run)) 
 
 
-def exec_snakemake(popen_cmd, local=False, env=None, cwd=None):
+def exec_snakemake(popen_cmd, local=False, dry_run=False, env=None, cwd=None):
     # async execution w/ filter: 
     #   - https://gist.github.com/DGrady/b713db14a27be0e4e8b2ffc351051c7c
     #   - https://lysator.liu.se/~bellman/download/asyncproc.py
@@ -99,7 +99,7 @@ def exec_snakemake(popen_cmd, local=False, env=None, cwd=None):
     else:
         popen_kwargs['cwd'] = str(Path.cwd())
 
-    if local:
+    if local or dry_run:
         proc = Popen(popen_cmd, stdout=PIPE, stderr=STDOUT, **popen_kwargs)
         parent_jobid = None
         for line in proc.stdout:
@@ -116,7 +116,7 @@ def exec_snakemake(popen_cmd, local=False, env=None, cwd=None):
         jid_search = re.search(r"(\d{5,10})", snakemake_run_out.decode('utf-8'), re.MULTILINE)
         if jid_search:
             parent_jobid = jid_search.group(1)
-    mode = "local" if local else "dencentralized"
+    mode = "local" if local or dry_run else "headless"
     if parent_jobid:
         print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC} Master job submitted in '{mode}' mode on job {esc_colors.OKGREEN}{str(parent_jobid)}{esc_colors.ENDC}")
     return proc.returncode == 0, parent_jobid
@@ -126,7 +126,7 @@ def mk_sbatch_script(wd, cmd):
     master_job_script = \
     """
     #!/bin/bash
-    #SBATCH --job-name=master_job_dmux
+    #SBATCH --job-name=dmux_master
     #SBATCH --output=./slurm/masterjob_snakemake_%j.out
     #SBATCH --error=./slurm/masterjob_snakemake_%j.err
     #SBATCH --ntasks=1
@@ -262,5 +262,5 @@ def exec_pipeline(configs, dry_run=False, local=False):
                   f"{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
         
         print(' '.join(map(str, this_cmd)))
-        exec_snakemake(this_cmd, local=local, env=top_env, cwd=str(Path(this_config['out_to']).absolute()))
+        exec_snakemake(this_cmd, local=local, dry_run=dry_run, env=top_env, cwd=str(Path(this_config['out_to']).absolute()))
 
