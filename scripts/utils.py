@@ -135,7 +135,7 @@ def mk_sbatch_script(wd, cmd):
     #SBATCH --export=ALL
     #SBATCH --mem=16g
     """.lstrip()
-    master_job_script += get_mods() + "\n"
+    master_job_script += get_mods(init=True) + "\n"
     master_job_script += cmd
     master_job_script = '\n'.join([x.lstrip() for x in master_job_script.split('\n')])
     master_script_location = Path(wd, 'slurm', 'master_jobscript.sh').absolute()
@@ -145,7 +145,7 @@ def mk_sbatch_script(wd, cmd):
     return master_script_location
 
 
-def get_mods():
+def get_mods(init=False):
     mods_needed = ['snakemake', 'singularity']
     mod_cmd = []
 
@@ -154,7 +154,10 @@ def get_mods():
         mod_cmd.append('spack load miniconda3@4.11.0')
         mod_cmd.append('source activate snakemake7-19-1')
     else:
-        mod_cmd.append('module purge')
+        if init:
+            mod_cmd.append('csh /etc/profile.d/modules.csh')
+        else:
+            mod_cmd.append('module purge')
         mod_cmd.append(f"module load {' '.join(mods_needed)}")
 
     return '; '.join(mod_cmd)
