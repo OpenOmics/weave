@@ -81,13 +81,8 @@ def valid_run_input(run):
     raise ArgumentTypeError("Invalid run value, neither an id or existing path: " + str(run))
 
 
-<<<<<<< HEAD
 def exec_snakemake(popen_cmd, local=False, dry_run=False, env=None, cwd=None):
     # async execution w/ filter: 
-=======
-def exec_snakemake(popen_cmd, local=False, env=None, cwd=None):
-    # async execution w/ filter:
->>>>>>> 1111a9088f3f871f7f323bc119b5618eabe366d0
     #   - https://gist.github.com/DGrady/b713db14a27be0e4e8b2ffc351051c7c
     #   - https://lysator.liu.se/~bellman/download/asyncproc.py
     #   - https://gist.github.com/kalebo/1e085ee36de45ffded7e5d9f857265d0
