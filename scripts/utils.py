@@ -99,19 +99,50 @@ def exec_snakemake(popen_cmd, local=False, env=None, cwd=None):
     else:
         popen_kwargs['cwd'] = str(Path.cwd())
 
-    proc = Popen(popen_cmd, stdout=PIPE, stderr=STDOUT, **popen_kwargs)
-
-    parent_jobid = None
-    for line in proc.stdout:
-        lutf8 = line.decode('utf-8')
-        jid_search = re.search(r"external jobid \'(\d+)\'", lutf8, re.MULTILINE)
+    if local:
+        proc = Popen(popen_cmd, stdout=PIPE, stderr=STDOUT, **popen_kwargs)
+        parent_jobid = None
+        for line in proc.stdout:
+            lutf8 = line.decode('utf-8')
+            jid_search = re.search(r"external jobid \'(\d+)\'", lutf8, re.MULTILINE)
+            if jid_search:
+                parent_jobid = int(jid_search.group(1))
+            sys.stdout.write(lutf8)
+        snakemake_run_out, _ = proc.communicate()
+    else:
+        jobscript = mk_sbatch_script(cwd, ' '.join([str(x) for x in popen_cmd]))
+        proc = Popen(['sbatch', jobscript], stdout=PIPE, stderr=STDOUT, **popen_kwargs)
+        snakemake_run_out, _ = proc.communicate()
+        jid_search = re.search(r"(\d{5,10})", snakemake_run_out.decode('utf-8'), re.MULTILINE)
         if jid_search:
-            parent_jobid = int(jid_search.group(1))
-        sys.stdout.write(lutf8)
-
-    snakemake_run_out, _ = proc.communicate()
-
+            parent_jobid = jid_search.group(1)
+    mode = "local" if local else "dencentralized"
+    if parent_jobid:
+        print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC} Master job submitted in '{mode}' mode on job {esc_colors.OKGREEN}{str(parent_jobid)}{esc_colors.ENDC}")
     return proc.returncode == 0, parent_jobid
+
+
+def mk_sbatch_script(wd, cmd):
+    master_job_script = \
+    """
+    #!/bin/bash
+    #SBATCH --job-name=master_job_dmux
+    #SBATCH --output=./slurm/masterjob_snakemake_%j.out
+    #SBATCH --error=./slurm/masterjob_snakemake_%j.err
+    #SBATCH --ntasks=1
+    #SBATCH --cpus-per-task=2
+    #SBATCH --time=02-00:00:00
+    #SBATCH --export=ALL
+    #SBATCH --mem=16g
+    """.lstrip()
+    master_job_script += get_mods() + "\n"
+    master_job_script += cmd
+    master_job_script = '\n'.join([x.lstrip() for x in master_job_script.split('\n')])
+    master_script_location = Path(wd, 'slurm', 'master_jobscript.sh').absolute()
+    master_script_location.parent.mkdir(mode=0o755, parents=True, exist_ok=True)
+    with open(master_script_location, 'w') as fo:
+        fo.write(master_job_script)
+    return master_script_location
 
 
 def get_mods():
@@ -121,6 +152,7 @@ def get_mods():
     if host == 'bigsky':
         mod_cmd.append('source /gs1/apps/user/rmlspack/share/spack/setup-env.sh')
         mod_cmd.append('spack load miniconda3@4.11.0')
+        mod_cmd.append('source activate snakemake7-19-1')
     else:
         mod_cmd.append('module purge')
         mod_cmd.append(f"module load {' '.join(mods_needed)}")
@@ -200,7 +232,7 @@ def exec_pipeline(configs, dry_run=False, local=False):
         top_env = {}
         top_env['PATH'] = os.environ["PATH"]
         top_env['SNK_CONFIG'] = str(config_file.absolute())
-        top_env['LOAD_MODULES'] = get_mods()
+        # top_env['LOAD_MODULES'] = get_mods()
         top_env['SINGULARITY_CACHEDIR'] = str(Path(this_config['out_to'], '.singularity').absolute())
         this_cmd = [
             "snakemake",
@@ -227,5 +259,5 @@ def exec_pipeline(configs, dry_run=False, local=False):
                   f"{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
         
         print(' '.join(map(str, this_cmd)))
-        exec_snakemake(this_cmd, local=local, env=top_env, cwd=str(Path(configs['out_to'][i]).absolute()))
+        exec_snakemake(this_cmd, local=local, env=top_env, cwd=str(Path(this_config['out_to']).absolute()))
 
