@@ -1,22 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 # ~~~~~~~~~~~~~~~
-#   misc. helper functions for the Dmux software package
+#   Miscellaneous utility functions for the Dmux software package
 # ~~~~~~~~~~~~~~~
 import re
 import json
 import os
 import yaml
 import sys
-import xml.etree.ElementTree as ET
-from os import access as check_access, W_OK
 from argparse import ArgumentTypeError
 from dateutil.parser import parse as date_parser
 from subprocess import Popen, PIPE, STDOUT
 from pathlib import Path, PurePath
-from .files import parse_samplesheet
-from .config import SNAKEFILE, DIRECTORY_CONFIGS, get_current_server
-from .modules import get_mods, init_mods, close_mods
+
+# ~~~ internals ~~~
+from .files import parse_samplesheet, mk_or_pass_dirs
+from .config import SNAKEFILE, DIRECTORY_CONFIGS, get_current_server, get_resource_config
+
+
+host = get_current_server()
 
 
 class esc_colors:
@@ -35,39 +37,7 @@ class PathJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, PurePath):
             return str(obj)
-
-
-def mk_or_pass_dirs(*dirs):
-    for _dir in dirs:
-        if isinstance(_dir, str):
-            _dir = Path(_dir)
-        _dir = _dir.resolve()
-        _dir.mkdir(mode=0o755, parents=True, exist_ok=True)
-    return 1
-
-
-def base_config(keys):
-    this_config = {}
-    this_config['resources'] = get_resource_config()
-    for elem_key in keys:
-        this_config[elem_key] = []
-    return this_config
-
-
-def get_resource_config():
-    resource_dir = Path(__file__, '..', '..', 'config').absolute()
-    resource_json = Path(resource_dir, get_current_server() + '.json').resolve()
-
-    if not resource_json.exists():
-        return None
-
-    return json.load(open(resource_json))
-
-
-def month2fiscalq(month):
-    if month < 1 or month > 12:
-        return None
-    return 'Q' + str(int((month/4)+1))
+        return super(self).default(obj)
 
 
 def valid_runid(id_to_check):
@@ -91,14 +61,12 @@ def valid_runid(id_to_check):
     except ValueError as e:
         raise ValueError('Invalid run id time') from e
 
-
     if h >= 25 or m >= 60:
         raise ValueError('Invalid run id time: ' + h + m)
-    
 
     # TODO: check instruments against labkey
-
     return id_to_check
+
 
 def valid_run_input(run):
     regex_run_id = r"(\d{6})_([A-Z]{2}\d{6})_(\d{4})_([A-Z0-9]{10})"
@@ -113,60 +81,7 @@ def valid_run_input(run):
     raise ArgumentTypeError("Invalid run value, neither an id or existing path: " + str(run)) 
 
 
-def get_run_directories(runids, seq_dir=None):
-    host = get_current_server()
-    seq_dirs = Path(seq_dir).absolute() if seq_dir else DIRECTORY_CONFIGS[host]['seq']
-    seq_contents = [_child for _child in seq_dirs.iterdir()]
-    seq_contents_names = [child for child in map(lambda d: d.name, seq_contents)]
-    
-    run_paths, invalid_runs  = [], []
-    run_return = []
-    for run in runids:
-        if Path(run).exists():
-            # this is a full pathrun directory
-            run_paths.append(Path(run))
-        elif run in seq_contents_names:
-            for _r in seq_contents:
-                if run == _r.name:
-                    run_paths.append(_r)
-        else:
-            invalid_runs.append(run)
-
-    for run_p in run_paths:
-        rid = run_p.name
-        this_run_info = dict(run_id=rid)
-        if Path(run_p, 'SampleSheet.csv').exists():
-            this_run_info['samplesheet'] = parse_samplesheet(Path(run_p, 'SampleSheet.csv').absolute())
-        else:
-            raise FileNotFoundError(f'Run {rid}({run_p}) does not have a sample sheet.')
-        if Path(run_p, 'RunInfo.xml').exists():
-            run_xml = ET.parse(Path(run_p, 'RunInfo.xml').absolute()).getroot()
-            this_run_info.update({info.tag: info.text for run in run_xml for info in run \
-                             if info.text is not None and info.text.strip() not in ('\n', '')})
-        else:
-            raise FileNotFoundError(f'Run {rid}({run_p}) does not have a RunInfo.xml file.')
-        run_return.append((run_p, this_run_info))
-
-    if invalid_runs:
-        raise ValueError('Runs entered are invalid (missing sequencing artifacts or directory does not exist): \n' + \
-                         ', '.join(invalid_runs))
-    
-    return run_return
-
-
-def valid_run_output(output_directory, dry_run=False):
-    if dry_run:
-        return Path(output_directory).absolute()
-    output_directory = Path(output_directory).absolute()
-    if not output_directory.exists():
-        output_directory.mkdir(parents=True, mode=0o765)
-    
-    if not check_access(output_directory, W_OK):
-        raise PermissionError(f'Can not write to output directory {output_directory}')
-    return output_directory
-
-
-def exec_snakemake(popen_cmd, env=None, cwd=None):
+def exec_snakemake(popen_cmd, local=False, env=None, cwd=None):
     # async execution w/ filter: 
     #   - https://gist.github.com/DGrady/b713db14a27be0e4e8b2ffc351051c7c
     #   - https://lysator.liu.se/~bellman/download/asyncproc.py
@@ -199,84 +114,21 @@ def exec_snakemake(popen_cmd, env=None, cwd=None):
     return proc.returncode == 0, parent_jobid
 
 
-# ~~~ for `run` subcommand ~~~
-def exec_demux_pipeline(configs, dry_run=False, local=False):
-    init_mods_proc = init_mods()
-    assert init_mods_proc, f"Failed to initialize modules: {get_mods()}"
-    jobids = [] 
-    # TODO: when or if other instrument profiles are needed, 
-    #       we will need to expand this portion to 
-    #       determine instrument type/brand by some method.
-    this_instrument = 'Illumnia'
-    snake_file = SNAKEFILE[this_instrument]['demux']
-    fastq_demux_profile = DIRECTORY_CONFIGS[get_current_server()]['profile']
-    profile_config = {}
-    if Path(fastq_demux_profile, 'config.yaml').exists():
-        profile_config.update(yaml.safe_load(open(Path(fastq_demux_profile, 'config.yaml'))))
+def get_mods():
+    mods_needed = ['snakemake', 'singularity']
+    mod_cmd = []
 
-    top_singularity_dirs = [Path(c_dir, '.singularity').absolute() for c_dir in configs['out_to']]
-    top_config_dirs = [Path(c_dir, '.config').absolute() for c_dir in configs['out_to']]
-    _dirs = top_singularity_dirs + top_config_dirs
-    mk_or_pass_dirs(*_dirs)
+    if host == 'bigsky':
+        mod_cmd.append('source /gs1/apps/user/rmlspack/share/spack/setup-env.sh')
+        mod_cmd.append('spack load miniconda3@4.11.0')
+    else:
+        mod_cmd.append('module purge')
+        mod_cmd.append(f"module load {' '.join(mods_needed)}")
 
-    for i in range(0, len(configs['projects'])):
-        this_config = {k: (v[i] if k != 'resources' else v) for k, v in configs.items()}
-        this_config.update(profile_config)
-        config_file = Path(this_config['out_to'], '.config', f'config_job_{str(i)}.json').absolute()
-        json.dump(this_config, open(config_file, 'w'), cls=PathJSONEncoder, indent=4)
-        top_env = {}
-        top_env['PATH'] = os.environ['PATH']
-        top_env['SNK_CONFIG'] = str(config_file.absolute())
-        top_env['LOAD_MODULES'] = get_mods()
-        top_env['SINGULARITY_CACHEDIR'] = str(Path(this_config['out_to'], '.singularity').absolute())
-        this_cmd = [
-            "snakemake", "--use-singularity", "--singularity-args",
-            f"\'-B {this_config['runs']},{str(this_config['out_to'])}\'",
-            "-s", f"{snake_file}", 
-        ]
-
-        if not local:
-            this_cmd.extend(["--profile", f"{fastq_demux_profile}"])
-
-        if dry_run:
-            print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC} {esc_colors.UNDERLINE}Dry run{esc_colors.ENDC} "
-                  f"demultiplexing of run {esc_colors.BOLD}{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
-            this_cmd.extend(['--dry-run', '-p'])
-            print(this_cmd)
-            proc = Popen(this_cmd, env=top_env)
-            proc.communicate()
-        else:
-            print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC}Executing demultiplexing of run {esc_colors.BOLD}"
-                  f"{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
-            jobgood, parent_jobid = exec_snakemake(this_cmd, env=top_env, cwd=str(Path(configs['out_to'][i]).absolute()))
-            assert jobgood, 'job run good'
-            jobids.append(parent_jobid)
-        
-    close_mods()
-    return jobids
+    return '; '.join(mod_cmd)
 
 
-def base_run_config():
-    DEFAULT_CONFIG_KEYS = ('runs', 'run_ids', 'projects', 'reads_out', 'out_to', 'rnums', 'bcl_files')
-    return base_config(DEFAULT_CONFIG_KEYS)
-
-
-# ~~~ for `ngsqc` subcommand ~~~
-def base_qc_config():
-    DEFAULT_CONFIG_KEYS = ('sample_sheet', 'run_ids', 'projects', 'samples', 'sids', 'out_to', 'demux_dir', 'parent_jid', 'rnums')
-    return base_config(DEFAULT_CONFIG_KEYS)
-
-def find_demux_dir(run_dir):
-    demux_stat_files = [x for x in Path(run_dir).rglob('DemultiplexingStats.xml')]
-    import ipdb; ipdb.set_trace()
-
-    if len(demux_stat_files) != 1:
-        raise FileNotFoundError
-    
-    return Path(demux_stat_files[0], '..').absolute()
-
-
-def get_ngsqc_mounts(*extras):
+def get_mounts(*extras):
     mount_binds = []
     resources = get_resource_config()
 
@@ -324,11 +176,7 @@ def ensure_pe_adapters(samplesheets):
     return all(pe)
 
 
-def exec_ngsqc_pipeline(configs, dry_run=False, local=False):
-    # TODO: when or if other instrument profiles are needed, 
-    #       we will need to expand this portion to 
-    #       determine instrument type/brand by some method.
-    init_mods()
+def exec_pipeline(configs, dry_run=False, local=False):
     this_instrument = 'Illumnia'
     snake_file = SNAKEFILE[this_instrument]['ngs_qc']
     fastq_demux_profile = DIRECTORY_CONFIGS[get_current_server()]['profile']
@@ -340,16 +188,16 @@ def exec_ngsqc_pipeline(configs, dry_run=False, local=False):
     top_config_dirs = [Path(c_dir, '.config').absolute() for c_dir in configs['out_to']]
     _dirs = top_singularity_dirs + top_config_dirs
     mk_or_pass_dirs(*_dirs)
+    skip_config_keys = ('resources', 'runqc')
 
-    for i in range(0, len(configs['projects'])): 
-        this_config = {k: (v[i] if k != 'resources' else v) for k, v in configs.items() if v}
+    for i in range(0, len(configs['run_ids'])):
+        this_config = {k: (v[i] if k not in skip_config_keys else v) for k, v in configs.items() if v}
         this_config.update(profile_config)
-        singularity_binds = get_ngsqc_mounts(Path(this_config['out_to']).absolute(), Path(this_config['demux_dir']).absolute())
+        extra_to_mount = [this_config['out_to'], this_config['demux_input_dir']]
+        singularity_binds = get_mounts(*extra_to_mount)
         config_file = Path(this_config['out_to'], '.config', f'config_job_{str(i)}.json').absolute()
         json.dump(this_config, open(config_file, 'w'), cls=PathJSONEncoder, indent=4)
         top_env = {}
-        if 'parent_jid' in this_config and this_config['parent_jid'] is not None and not local:
-            top_env['SLURM_DEP_PARENT_JOB'] = str(this_config['parent_jid'])
         top_env['PATH'] = os.environ["PATH"]
         top_env['SNK_CONFIG'] = str(config_file.absolute())
         top_env['LOAD_MODULES'] = get_mods()
@@ -360,6 +208,7 @@ def exec_ngsqc_pipeline(configs, dry_run=False, local=False):
             "--use-singularity", 
             "--rerun-incomplete", 
             "--rerun-triggers", "mtime",
+            "--verbose",
             "-s", snake_file, 
             "--profile", fastq_demux_profile
         ]
@@ -370,15 +219,13 @@ def exec_ngsqc_pipeline(configs, dry_run=False, local=False):
             this_cmd.extend(["--profile", f"{fastq_demux_profile}"])
 
         if dry_run:
-            print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC} {esc_colors.UNDERLINE}Dry run{esc_colors.ENDC} " + \
-                   "demultiplexing of run {esc_colors.BOLD}{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
+            print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC}{esc_colors.UNDERLINE}Dry run{esc_colors.ENDC} " + \
+                  f"demultiplexing of run {esc_colors.BOLD}{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
             this_cmd.extend(['--dry-run', '-p'])
         else:
             print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC}Executing ngs qc pipeline for run {esc_colors.BOLD}"
                   f"{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
         
         print(' '.join(map(str, this_cmd)))
-        exec_snakemake(this_cmd, env=top_env, cwd=str(Path(configs['out_to'][i]).absolute()))
-
-    close_mods()
+        exec_snakemake(this_cmd, local=local, env=top_env, cwd=str(Path(configs['out_to'][i]).absolute()))
 

@@ -1,6 +1,3 @@
-snakemake
-requests
 pandas
-wheel
+requests
 terminaltables
-labkey

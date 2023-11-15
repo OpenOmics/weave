@@ -1,4 +1,5 @@
 import re
+import json
 from pathlib import Path
 from os import access as check_access, R_OK
 from socket import gethostname
@@ -48,14 +49,37 @@ LABKEY_CONFIGS = {
 
 
 # ~~~ snakemake configurations ~~~ 
+illumina_pipelines = defaultdict(lambda: Path(Path(__file__).parent.parent, "workflow", "Snakefile").resolve())
+# can add support for NextSeq2k and bclconvert here
 SNAKEFILE = {
-    "Illumnia": {
-        "demux": Path(Path(__file__).parent.parent, "workflow", "illumina_demux", "Snakefile").resolve(),
-        "ngs_qc": Path(Path(__file__).parent.parent, "workflow", "ngs_qaqc", "Snakefile").resolve(),
-    }
+    "Illumnia": illumina_pipelines
 }
 
-# ~~~ directory configurations ~~~ 
+
+# ~~~ configuration helpers ~~~
+def get_resource_config():
+    resource_dir = Path(__file__, '..', '..', 'config').absolute()
+    resource_json = Path(resource_dir, get_current_server() + '.json').resolve()
+
+    if not resource_json.exists():
+        return None
+
+    return json.load(open(resource_json))
+
+
+def base_config(keys=None, qc=True):
+    base_keys = ('runs', 'run_ids', 'project', 'rnums', 'bcl_files', \
+                'sample_sheet', 'samples', 'sids', 'out_to', 'demux_input_dir')
+    this_config = {k: [] for k in base_keys}
+    this_config['resources'] = get_resource_config()
+    this_config['runqc'] = qc
+
+    if keys:
+        for elem_key in keys:
+            this_config[elem_key] = []
+    return this_config
+
+
 def get_biowulf_seq_dirs():
     top_dir = Path("/data/RTB_GRS/SequencerRuns/")
     transfer_breadcrumb = "RTAComplete.txt"

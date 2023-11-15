@@ -4,11 +4,11 @@
 #   file system helper functions for the Dmux software package
 # ~~~~~~~~~~~~~~~
 from pathlib import Path
-from os import access as check_access, R_OK
+import xml.etree.ElementTree as ET
+from os import access as check_access, R_OK, W_OK
 from functools import partial
 from .sample_sheet import SampleSheet
-from .labkey import LabKeyServer
-from .config import LABKEY_CONFIGS, DIRECTORY_CONFIGS
+from .config import get_current_server, LABKEY_CONFIGS, DIRECTORY_CONFIGS
 
 
 def get_all_seq_dirs(top_dir, server):
@@ -26,6 +26,18 @@ def get_all_seq_dirs(top_dir, server):
                     _dirs.append(_file2.resolve())
     # check if directory is processed or not
     return _dirs
+
+
+def valid_run_output(output_directory, dry_run=False):
+    if dry_run:
+        return Path(output_directory).absolute()
+    output_directory = Path(output_directory).absolute()
+    if not output_directory.exists():
+        output_directory.mkdir(parents=True, mode=0o765)
+    
+    if not check_access(output_directory, W_OK):
+        raise PermissionError(f'Can not write to output directory {output_directory}')
+    return output_directory
 
 
 def get_all_staged_dirs(top_dir, server):
@@ -46,6 +58,15 @@ def runid2samplesheet(runid, top_dir=DIRECTORY_CONFIGS['bigsky']['seq']):
     else:
         raise FileNotFoundError("Run sample sheet does not exist: " + str(ss_path) + f"/SampleSheet_{runid}.[txt, csv]")
     return ss_path
+
+
+def mk_or_pass_dirs(*dirs):
+    for _dir in dirs:
+        if isinstance(_dir, str):
+            _dir = Path(_dir)
+        _dir = _dir.resolve()
+        _dir.mkdir(mode=0o755, parents=True, exist_ok=True)
+    return True
 
 
 def sniff_samplesheet(ss):
@@ -74,13 +95,62 @@ def is_dir_staged(server, run_dir):
         RTAComplete.txt - file transfer from instrument breadcrumb, CSV file with values:
             Run Date, Run time, Instrument ID        
     """
-    global LABKEY_CONFIGS
     this_labkey_project = LABKEY_CONFIGS[server]['container_path']
     TRANSFER_BREADCRUMB = 'RTAComplete.txt'
-    SS_SHEET_EXISTS = LabKeyServer.runid2samplesheeturl(server, this_labkey_project, run_dir.name)
+    # SS_SHEET_EXISTS = LabKeyServer.runid2samplesheeturl(server, this_labkey_project, run_dir.name)
 
     analyzed_checks = [
         Path(run_dir, TRANSFER_BREADCRUMB).exists(),
-        SS_SHEET_EXISTS is not None
+        # SS_SHEET_EXISTS is not None
     ]
     return all(analyzed_checks)
+
+
+def find_demux_dir(run_dir):
+    demux_stat_files = [x for x in Path(run_dir).rglob('DemultiplexingStats.xml')]
+
+    if len(demux_stat_files) != 1:
+        raise FileNotFoundError
+    
+    return Path(demux_stat_files[0], '..').absolute()
+
+
+def get_run_directories(runids, seq_dir=None):
+    host = get_current_server()
+    seq_dirs = Path(seq_dir).absolute() if seq_dir else DIRECTORY_CONFIGS[host]['seq']
+    seq_contents = [_child for _child in seq_dirs.iterdir()]
+    seq_contents_names = [child for child in map(lambda d: d.name, seq_contents)]
+    
+    run_paths, invalid_runs  = [], []
+    run_return = []
+    for run in runids:
+        if Path(run).exists():
+            # this is a full pathrun directory
+            run_paths.append(Path(run))
+        elif run in seq_contents_names:
+            for _r in seq_contents:
+                if run == _r.name:
+                    run_paths.append(_r)
+        else:
+            invalid_runs.append(run)
+
+    for run_p in run_paths:
+        rid = run_p.name
+        this_run_info = dict(run_id=rid)
+        if Path(run_p, 'SampleSheet.csv').exists():
+            this_run_info['samplesheet'] = parse_samplesheet(Path(run_p, 'SampleSheet.csv').absolute())
+        else:
+            raise FileNotFoundError(f'Run {rid}({run_p}) does not have a sample sheet.')
+        if Path(run_p, 'RunInfo.xml').exists():
+            run_xml = ET.parse(Path(run_p, 'RunInfo.xml').absolute()).getroot()
+            this_run_info.update({info.tag: info.text for run in run_xml for info in run \
+                             if info.text is not None and info.text.strip() not in ('\n', '')})
+        else:
+            raise FileNotFoundError(f'Run {rid}({run_p}) does not have a RunInfo.xml file.')
+        run_return.append((run_p, this_run_info))
+
+    if invalid_runs:
+        raise ValueError('Runs entered are invalid (missing sequencing artifacts or directory does not exist): \n' + \
+                         ', '.join(invalid_runs))
+    
+    return run_return
