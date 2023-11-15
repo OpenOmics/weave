@@ -73,16 +73,21 @@ def valid_run_input(run):
     match_id = re.search(regex_run_id, run, re.MULTILINE)
     if match_id:
         return run
-    
+
     if Path(run).exists():
         run = Path(run).absolute()
         return run
-    
-    raise ArgumentTypeError("Invalid run value, neither an id or existing path: " + str(run)) 
+
+    raise ArgumentTypeError("Invalid run value, neither an id or existing path: " + str(run))
 
 
+<<<<<<< HEAD
 def exec_snakemake(popen_cmd, local=False, dry_run=False, env=None, cwd=None):
     # async execution w/ filter: 
+=======
+def exec_snakemake(popen_cmd, local=False, env=None, cwd=None):
+    # async execution w/ filter:
+>>>>>>> 1111a9088f3f871f7f323bc119b5618eabe366d0
     #   - https://gist.github.com/DGrady/b713db14a27be0e4e8b2ffc351051c7c
     #   - https://lysator.liu.se/~bellman/download/asyncproc.py
     #   - https://gist.github.com/kalebo/1e085ee36de45ffded7e5d9f857265d0
@@ -155,7 +160,7 @@ def get_mods(init=False):
         mod_cmd.append('source activate snakemake7-19-1')
     else:
         if init:
-            mod_cmd.append('csh /etc/profile.d/modules.csh')
+            mod_cmd.append('source /etc/profile.d/modules.sh')
         else:
             mod_cmd.append('module purge')
         mod_cmd.append(f"module load {' '.join(mods_needed)}")
@@ -169,7 +174,7 @@ def get_mounts(*extras):
 
     if resources:
         for this_mount_label, this_mount_attrs in resources['mounts'].items():
-            this_mount_signature = this_mount_attrs['from'] + ':' + this_mount_attrs['to'] + ':' + this_mount_attrs['mode'] 
+            this_mount_signature = this_mount_attrs['from'] + ':' + this_mount_attrs['to'] + ':' + this_mount_attrs['mode']
             mount_binds.append(this_mount_signature)
 
     if extras:
@@ -240,11 +245,11 @@ def exec_pipeline(configs, dry_run=False, local=False):
         this_cmd = [
             "snakemake",
             "-pr",
-            "--use-singularity", 
-            "--rerun-incomplete", 
+            "--use-singularity",
+            "--rerun-incomplete",
             "--rerun-triggers", "mtime",
             "--verbose",
-            "-s", snake_file, 
+            "-s", snake_file,
             "--profile", fastq_demux_profile
         ]
         if singularity_binds:
@@ -260,7 +265,7 @@ def exec_pipeline(configs, dry_run=False, local=False):
         else:
             print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC}Executing ngs qc pipeline for run {esc_colors.BOLD}"
                   f"{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
-        
+
         print(' '.join(map(str, this_cmd)))
         exec_snakemake(this_cmd, local=local, dry_run=dry_run, env=top_env, cwd=str(Path(this_config['out_to']).absolute()))
 
