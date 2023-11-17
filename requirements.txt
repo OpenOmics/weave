@@ -1,9 +1,5 @@
-snakemake
-requests
-webdavclient3
-labkey
-docxtpl
 pandas
-sample-sheet
-wheel
-snakemake
+requests
+terminaltables
+pyyaml
+tabulate

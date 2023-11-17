@@ -1,0 +1,1 @@
+FROM umccr/bcl2fastq

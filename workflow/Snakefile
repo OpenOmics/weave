@@ -1,0 +1,116 @@
+from snakemake.utils import min_version
+import os
+
+min_version("5.14.0")
+
+
+def flatten(this_list):
+    return [i[x] for i in this_list for x in range(len(i))]
+
+
+envvars:
+    "SNK_CONFIG",
+
+
+configfile: os.environ["SNK_CONFIG"]
+
+
+demux_expand_args = {
+    "sids": config['sids'],
+    "project": config["project"],
+    "out_to": config["out_to"],
+    "rid": config["run_ids"],
+    "rnums": config["rnums"],
+    "sample_num": [
+        str(x) for x in range(1, len(config['sids'])+1)
+    ],
+}
+
+
+qa_qc_outputs = flatten(
+    [
+        # ~~ fastqc on untrimmed reads ~~
+        expand(
+            "{out_dir}/{rid}/{project}/{sids}/fastqc_untrimmed/{sids}_R{rnum}_001_fastqc.zip",
+            out_dir=config["out_to"],
+            project=config["project"],
+            rid=config["run_ids"],
+            sids=config["sids"],
+            rnum=config["rnums"],
+        ),
+        # ~~ fastqc on trimmed reads ~~
+        expand(
+            "{out_dir}/{rid}/{project}/{sids}/fastqc_trimmed/{sids}_trimmed_R{rnum}_fastqc.zip",
+            out_dir=config["out_to"],
+            sids=config["sids"],
+            project=config["project"],
+            rid=config["run_ids"],
+            rnum=config["rnums"],
+        ),
+        # ~~ fastp trimming metrics ~~
+        expand(
+            "{out_dir}/{rid}/{project}/{sids}/fastp/{sids}_trimmed_R{rnum}.fastq.gz",
+            out_dir=config["out_to"],
+            sids=config["sids"],
+            project=config["project"],
+            rid=config["run_ids"],
+            rnum=config["rnums"],
+        ),
+        # ~~ fastq screen ~~
+        expand(
+            "{out_dir}/{rid}/{project}/{sids}/fastq_screen/{sids}_trimmed_R{rnum}_screen.html",
+            out_dir=config["out_to"],
+            sids=config["sids"],
+            rnum=config["rnums"],
+            rid=config["run_ids"],
+            project=config["project"],
+        ),
+        # kraken2
+        expand(
+            "{out_dir}/{rid}/{project}/{sids}/kraken/{sids}.tsv",
+            out_dir=config["out_to"],
+            sids=config["sids"],
+            project=config["project"],
+            rid=config["run_ids"],
+        ),
+        # kaiju
+        expand(
+            "{out_dir}/{rid}/{project}/{sids}/kaiju/{sids}.tsv",
+            out_dir=config["out_to"],
+            sids=config["sids"],
+            project=config["project"],
+            rid=config["run_ids"],
+        ),
+        # multiqc
+        expand(
+            "{out_dir}/{rid}/{project}/multiqc/Run-{rid}-Project-{project}_multiqc_report.html",
+            out_dir=config["out_to"],
+            project=config["project"],
+            rid=config["run_ids"],
+        ),
+    ]
+)
+
+
+all_outputs = flatten(
+    [
+        # ~~ illumnia demultiplexing ~~
+        expand("{out_to}/demux/{rid}/{project}/{sids}_R{rnums}_001.fastq.gz", **demux_expand_args),
+        expand("{out_to}/demux/Stats/Stats.json", **demux_expand_args),
+        expand("{out_to}/demux/.DEMUX_COMPLETE", **demux_expand_args),
+    ]
+)
+
+
+if config["runqc"]:
+    all_outputs.extend(qa_qc_outputs)
+
+
+rule all:
+    input:
+        all_outputs,
+
+
+include: "fastq.smk"
+include: "qc.smk"
+include: "demux.smk"
