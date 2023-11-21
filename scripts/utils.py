@@ -126,9 +126,9 @@ def mk_sbatch_script(wd, cmd):
     master_job_script = \
     """
     #!/bin/bash
-    #SBATCH --job-name=dmux_master
-    #SBATCH --output=./slurm/masterjob_snakemake_%j.out
-    #SBATCH --error=./slurm/masterjob_snakemake_%j.err
+    #SBATCH --job-name=weave_masterjob
+    #SBATCH --output=./slurm/%x_%j.out
+    #SBATCH --error=./slurm/%x_%j.err
     #SBATCH --ntasks=1
     #SBATCH --cpus-per-task=2
     #SBATCH --time=02-00:00:00
