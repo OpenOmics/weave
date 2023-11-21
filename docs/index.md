@@ -2,13 +2,8 @@
 
   <h1 style="font-size: 250%">weave 🔬</h1>
 
-  <b><i>An awesome metagenomic and metatranscriptomics pipeline</i></b><br> 
-  <a href="https://github.com/OpenOmics/weave/actions/workflows/main.yaml">
-    <img alt="tests" src="https://github.com/OpenOmics/weave/workflows/tests/badge.svg">
-  </a>
-  <a href="https://github.com/OpenOmics/weave/actions/workflows/docs.yml">
-    <img alt="docs" src="https://github.com/OpenOmics/weave/workflows/docs/badge.svg">
-  </a>
+  <b><i>An comprehensive demultiplexing and quality control and assurance</i></b><br> 
+
   <a href="https://github.com/OpenOmics/weave/issues">
     <img alt="GitHub issues" src="https://img.shields.io/github/issues/OpenOmics/weave?color=brightgreen">
   </a>
