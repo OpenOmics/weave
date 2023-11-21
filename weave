@@ -4,10 +4,6 @@ import argparse
 from pathlib import Path
 from scripts import utils, files, config
 
-main_parser = argparse.ArgumentParser(prog='dmux')
-sub_parser = main_parser.add_subparsers(help='sub-command help')
-parser_run = sub_parser.add_parser('run', help='run subcommand help')
-
 
 def run(args):
     """
@@ -51,7 +47,7 @@ def run(args):
 
 
 if __name__ == '__main__':
-    main_parser = argparse.ArgumentParser(prog='dmux')
+    main_parser = argparse.ArgumentParser(prog='weave')
     sub_parsers = main_parser.add_subparsers(help='run subcommand help')
 
     # ~~~ run subcommand ~~~

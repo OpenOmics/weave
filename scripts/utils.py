@@ -212,6 +212,11 @@ def ensure_pe_adapters(samplesheets):
 
 
 def exec_pipeline(configs, dry_run=False, local=False):
+    """
+        Execute the BCL->FASTQ pipeline.
+
+        This executes the pipeline.
+    """
     this_instrument = 'Illumnia'
     snake_file = SNAKEFILE[this_instrument]['ngs_qc']
     fastq_demux_profile = DIRECTORY_CONFIGS[get_current_server()]['profile']
