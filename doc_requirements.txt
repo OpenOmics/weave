@@ -1,5 +1,6 @@
 mkdocs
+mkdocs-minify-plugin
+mkdocs-git-revision-date-plugin
 mkdocstrings[python]
 mkdocs-material
 mkdocs-material-extensions
-mkdocs-git-revision-date-plugin
