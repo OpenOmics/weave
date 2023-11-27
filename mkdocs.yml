@@ -75,8 +75,8 @@ markdown_extensions:
   - pymdownx.critic
   - pymdownx.details
   - pymdownx.emoji:
-      emoji_index: !!python/name:materialx.emoji.twemoji
-      emoji_generator: !!python/name:materialx.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - pymdownx.highlight
   - pymdownx.inlinehilite
   - pymdownx.keys
@@ -99,7 +99,8 @@ markdown_extensions:
 nav:
   - About: index.md
   - Commands: 
-    - metamorph run: usage/run.md
+    - weave run: usage/run.md
+    - weave dl: usage/download.md
   - Installation: install.md
   - Reference: ref/reference.md
   - License: license.md
