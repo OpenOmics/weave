@@ -7,8 +7,11 @@
   <a href="https://github.com/OpenOmics/weave/issues">
     <img alt="GitHub issues" src="https://img.shields.io/github/issues/OpenOmics/weave?color=brightgreen">
   </a>
-    <a href="https://github.com/OpenOmics/weave/actions/workflows/docs.yml">
-    <img alt="docs" src="https://github.com/OpenOmics/weave/workflows/docs/badge.svg">
+  <a href="https://github.com/OpenOmics/weave/actions/workflows/dryrun.yaml">
+    <img alt="docs" src="https://github.com/OpenOmics/weave/actions/workflows/dryrun.yaml/badge.svg">
+  </a>
+  <a href="https://github.com/OpenOmics/weave/actions/workflows/doc.yml">
+    <img alt="docs" src="https://github.com/OpenOmics/weave/actions/workflows/doc.yml/badge.svg">
   </a>
   <a href="https://github.com/OpenOmics/weave/blob/main/LICENSE">
     <img alt="GitHub license" src="https://img.shields.io/github/license/OpenOmics/weave">
