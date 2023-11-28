@@ -44,16 +44,16 @@ The **`./weave`** pipeline is composed of two sub commands to setup and run the 
 
 </section>
 
-**weave** is a two-pronged pipeline; the first prong detects and uses the appropriate illumnia software to demultiplex the ensemble collection of reads into their individual samples and converts the sequencing information into the FASTQ file format. From there out the second prong is a distrubted parallele step that uses a variety of commonly accepting nextgen sequencing tools to report, visualize, and calculate the quality of the reads after sequencing. **weave** makes uses of the ubiquitous containerization software (singularity)[https://sylabs.io/]<sup>1</sup> for modularity, and the robust pipelining DSL [Snakemake](https://snakemake.github.io/)<sup>2</sup>
+**weave** is a two-pronged pipeline; the first prong detects and uses the appropriate illumnia software to demultiplex the ensemble collection of reads into their individual samples and converts the sequencing information into the FASTQ file format. From there out the second prong is a distrubted parallele step that uses a variety of commonly accepting nextgen sequencing tools to report, visualize, and calculate the quality of the reads after sequencing. **weave** makes uses of the ubiquitous containerization software (singularity)[https://sylabs.io/]<sup>2</sup> for modularity, and the robust pipelining DSL [Snakemake](https://snakemake.github.io/)<sup>3</sup>
 
 **weave** common use is to gauge the qualtiy of reads for potential downstream analysis. Since bioinformatic analysis requires robust and accurate data to draw scientific conclusions, this helps save time and resources when it comes to analyzing the volumous amount of sequencing data that is collected routinely.
 
 Several of the applications that **weave** uses to visualize and report quality metrics are:
-- [Kraken](https://github.com/DerrickWood/kraken2)<sup>1</sup>, kmer analysis
-- [Kaiju](https://bioinformatics-centre.github.io/kaiju/)<sup>1</sup>, kmer analysis
-- [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/)<sup>1</sup>, fastq statistics
-- [fastp](https://github.com/OpenGene/fastp)<sup>1</sup>, fastq adapter removal (trimming)
-- [FastQ Screen](https://www.bioinformatics.babraham.ac.uk/projects/fastq_screen/)<sup>1</sup>, taxonomic quantification
+- [Kraken](https://github.com/DerrickWood/kraken2)<sup>71</sup>, kmer analysis
+- [Kaiju](https://bioinformatics-centre.github.io/kaiju/)<sup>4</sup>, kmer analysis
+- [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/), fastq statistics
+- [fastp](https://github.com/OpenGene/fastp)<sup>6</sup>, fastq adapter removal (trimming)
+- [FastQ Screen](https://www.bioinformatics.babraham.ac.uk/projects/fastq_screen/)<sup>5</sup>, taxonomic quantification
 - [MultiQC](https://multiqc.info/)<sup>1</sup>, ensemble QC results
 
 ## Contribute 

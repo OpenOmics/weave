@@ -6,8 +6,12 @@ from socket import gethostname
 from collections import defaultdict
 
 
-# ~~~ hosts configurations ~~~ 
 def get_current_server():
+    """Return the current server name by looking at the hostname
+
+    Returns:
+        (str): one of `bigsky`, `biowulf`, or `locus`
+    """
     hn = gethostname()
     # bigsky hostnames
     re_bigsky = (r"ai-rml.*\.niaid\.nih\.gov", "bigsky")
@@ -58,6 +62,23 @@ SNAKEFILE = {
 
 # ~~~ configuration helpers ~~~
 def get_resource_config():
+    """Return a dictionary containing server specific references utilized in 
+    the workflow for directories or reference files.
+
+    Returns:
+        (dict): return configuration key value pairs of current server::
+
+            {
+            "sif": "/server/location/to/sif/directory",
+            "mounts": {
+                "refence binding": {
+                    "to": "/bind/to",
+                    "from": "/bind/from",
+                    "mode": "ro/rw"
+                },
+                ...
+            }
+    """
     resource_dir = Path(__file__, '..', '..', 'config').absolute()
     resource_json = Path(resource_dir, get_current_server() + '.json').resolve()
 
@@ -81,6 +102,12 @@ def base_config(keys=None, qc=True):
 
 
 def get_biowulf_seq_dirs():
+    """Get a list of sequence directories, that have the required illumnia file artifacts:
+    RTAComplete.txt - breadcrumb file created by bigsky transfer process and illumnia sequencing
+
+    Returns:
+        (list): list of `pathlib.Path`s of all sequencing directories on biowulf server
+    """
     top_dir = Path("/data/RTB_GRS/SequencerRuns/")
     transfer_breadcrumb = "RTAComplete.txt"
     if not top_dir.exists():
@@ -89,6 +116,12 @@ def get_biowulf_seq_dirs():
 
 
 def get_bigsky_seq_dirs():
+    """Get a list of sequence directories, that have the required illumnia file artifacts:
+    RTAComplete.txt - breadcrumb file created by bigsky transfer process and illumnia sequencing
+
+    Returns:
+        (list): list of `pathlib.Path`s of all sequencing directories on bigsky server
+    """
     top_dir = Path("/gs1/RTS/NextGen/SequencerRuns/")
     transfer_breadcrumb = "RTAComplete.txt"
     if not top_dir.exists():
