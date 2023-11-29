@@ -33,7 +33,7 @@ module load snakemake singularity`
 
 Biowulf uses environmental modules to control software. After executing the above you should see a message similar to:
 
-> [+] Loading snakemake  7.XX.X on cnXXXX
+> [+] Loading snakemake  7.XX.X on cnXXXX<br />
 > [+] Loading singularity  4.X.X  on cnXXXX
 
 ```bash title="<b>Bigsky</b>"
