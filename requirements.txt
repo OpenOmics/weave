@@ -3,3 +3,4 @@ requests
 terminaltables
 pyyaml
 tabulate
+progressbar

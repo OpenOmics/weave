@@ -61,6 +61,9 @@ SNAKEFILE = {
 
 
 # ~~~ configuration helpers ~~~
+remote_resource_confg = Path(Path(__file__).parent, '..', 'config', 'remote.json').absolute()
+
+
 def get_resource_config():
     """Return a dictionary containing server specific references utilized in 
     the workflow for directories or reference files.
