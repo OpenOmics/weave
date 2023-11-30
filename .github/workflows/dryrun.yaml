@@ -1,4 +1,4 @@
-name: Dry run weave & lint Snakefile
+name: Dry Run
 
 on:
   push:
