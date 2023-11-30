@@ -39,7 +39,7 @@ The **`./weave`** pipeline is composed of two sub commands to setup and run the 
 
 !!! inline custom-grid-button ""
 
-    [<code style="font-size: 1em;">weave <b>dl</b></code>](usage/download.md)  
+    [<code style="font-size: 1em;">weave <b>cache</b></code>](usage/cache.md)  
     Downloads the reference files for the pipeline to a selected directory.
 
 </section>

@@ -107,7 +107,7 @@ nav:
   - About: index.md
   - Commands: 
     - weave run: usage/run.md
-    - weave dl: usage/download.md
+    - weave cache: usage/cache.md
   - Installation: install.md
   - Reference: ref/reference.md
   - License: license.md

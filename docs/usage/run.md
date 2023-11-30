@@ -1,57 +1,105 @@
-# <code>metamorph <b>run</b></code>
+## Objective
 
-## 1. About 
-The `metamorph` executable is composed of several inter-related sub commands. Please see `metamorph -h` for all available options.
+`weave`'s `run` subcommand is the command line entrypoint for execution of the Illumnia demultiplexing and FASTQ QC/QA pipeline. 
 
-This part of the documentation describes options and concepts for <code>metamorph <b>run</b></code> sub command in more detail. With minimal configuration, the **`run`** sub command enables you to start running metamorph pipeline. 
+Given a run id or run directory containing the artifacts produced by Illumnia MiSeq/NextSeq/HiSeq instruments (RTAComplete.txt) this workflow will
+demultiplex all the reads and run an array of tools for evaluating the qualitying of the sequenced reads.
 
-Setting up the metamorph pipeline is fast and easy! In its most basic form, <code>metamorph <b>run</b></code> only has *two required inputs*.
+The ultimate output for this workflow is a [MultiQC](https://multiqc.info/examples/rna-seq/multiqc_report) report containing all the
+subsequent metrics from the QC/QA portions of the pipeline. 
 
-## 2. Synopsis
+The penultimate output for this workflow is a cohort of [fastq.gz](https://knowledge.illumina.com/software/general/software-general-reference_material-list/000002211) files
+deconvoluted from their adapter information and seperated into 
+
+## Method signature
 ```text
-$ metamorph run [--help] \
-      [--mode {slurm,local}] [--job-name JOB_NAME] [--batch-id BATCH_ID] \
-      [--tmp-dir TMP_DIR] [--silent] [--sif-cache SIF_CACHE] \ 
-      [--singularity-cache SINGULARITY_CACHE] \
-      [--dry-run] [--threads THREADS] \
-      --input INPUT [INPUT ...] \
-      --output OUTPUT
+weave run [-h] 
+    [-s/--seq_dir <sequencing directory>] 
+    [-o/--output <output directory>] 
+    [-d/--dry-run] 
+    [-n/--noqc] 
+    [-l/--local] 
+    <run directory> [<run directory> ...]
 ```
 
-The synopsis for each command shows its arguments and their usage. Optional arguments are shown in square brackets.
+## Example
 
-A user **must** provide a list of FastQ (globbing is supported) to analyze via `--input` argument and an output directory to store results via `--output` argument.
+### Setup
+```bash 
+# Step 1.) Grab an interactive node,
+# do not run on head node!
+sinteractive
 
-Use you can always use the `-h` option for information on a specific command. 
+# Step 2.) Follow install directions
+source ~/.my_virtual_environment/bin/activate
+```
 
-### 2.1 Required arguments
+### Dependencies
 
+Ensure that snakemake and singularity are loaded and `$PATH` accessible.
+
+If executing from biowulf cluster:
+
+```bash
+# Step 3.) module load snakemake and depdenencies 
+module purge
+module load singularity snakemake
+```
+
+If executing from BigSky cluster:
+
+```bash
+# Step 4.) spack load snakemake and depdenencies
+source /gs1/RTS/OpenOmics/bin/dependencies.sh
+```
+
+### Execution
+
+```bash
+# Step 4A.) Dry-run the weave pipeline
+./weave run <run id> \
+                  --output /data/$USER/output \
+                  --dry-run
+
+# Step 4B.) Run the weave pipeline
+# The slurm mode will submit jobs to 
+# the cluster. It is recommended running 
+# the pipeline in this mode.
+./weave run <run id> \
+                  --output /data/$USER/output \
+```
+
+#### Run Identifiers (runid)
+
+Run identifiers are strings that uniquely identify a particular sequencing run and are of the format:
+
+`DATE<YYMMDD>_INSTRUMENTID_TIME<24hr>_FLOWCELLID`
+
+## Arguments
+
+### Required
 Each of the following arguments are required. Failure to provide a required argument will result in a non-zero exit-code.
 
-  `--input INPUT [INPUT ...]`  
-> **Input FastQ or BAM file(s).**  
-> *type: file(s)*  
+  `<run directory> [<run directory> ...]`  
+> **Input runid or run directory.**  
+> *type: strings(s)/path(s)*  
 > 
-> One or more FastQ files can be provided. The pipeline does NOT support single-end data. From the command-line, each input file should seperated by a space. Globbing is supported! This makes selecting FastQ files easy. Input FastQ files should always be gzipp-ed.
+> One or more IDs or directories can be provided and the pipeline will run them. 
+> It is not necessary to specify server configuration information such as data parent directory, unless you
+> on a non-standard cluster.
 > 
-> ***Example:*** `--input .tests/*.R?.fastq.gz`
+> ***Example:*** `220729_NB551182_0219_AHGGJNBGXK`
 
 ---  
   `--output OUTPUT`
-> **Path to an output directory.**   
-> *type: path*
+> **Path to the top-level output directory.**   
+> *type: strings(s)/path(s)*  
 >   
-> This location is where the pipeline will create all of its output files, also known as the pipeline's working directory. If the provided output directory does not exist, it will be created automatically.
+> This location is where the pipeline will create all of its output files. If the provided output directory does not exist, it will be created automatically.
 > 
-> ***Example:*** `--output /data/$USER/metamorph_out`
+> ***Example:*** `--output /data/$USER/weave_out`
 
-### 2.2 Analysis options
-
-Each of the following arguments are optional, and do not need to be provided. 
-
-...add non-required analysis options 
-
-### 2.3 Orchestration options
+### Optional
 
 Each of the following arguments are optional, and do not need to be provided. 
 
@@ -64,110 +112,10 @@ Each of the following arguments are optional, and do not need to be provided.
 > ***Example:*** `--dry-run`
 
 ---  
-  `--silent`            
-> **Silence standard output.**  
+  `--local`            
+> **Execute locally instead of through a cluster executor**  
 > *type: boolean flag*
 > 
-> Reduces the amount of information directed to standard output when submitting master job to the job scheduler. Only the job id of the master job is returned.
+> This flag will trigger the workflow to run in the local terminal as a blocking process.
 >
-> ***Example:*** `--silent`
-
----  
-  `--mode {slurm,local}`  
-> **Execution Method.**  
-> *type: string*  
-> *default: slurm*
-> 
-> Execution Method. Defines the mode or method of execution. Vaild mode options include: slurm or local. 
-> 
-> ***slurm***    
-> The slurm execution method will submit jobs to the [SLURM workload manager](https://slurm.schedmd.com/). It is recommended running metamorph in this mode as execution will be significantly faster in a distributed environment. This is the default mode of execution.
->
-> ***local***  
-> Local executions will run serially on compute instance. This is useful for testing, debugging, or when a users does not have access to a high performance computing environment. If this option is not provided, it will default to a local execution mode. 
-> 
-> ***Example:*** `--mode slurm`
-
----  
-  `--job-name JOB_NAME`  
-> **Set the name of the pipeline's master job.**  
-> *type: string*
-> *default: pl:metamorph*
-> 
-> When submitting the pipeline to a job scheduler, like SLURM, this option always you to set the name of the pipeline's master job. By default, the name of the pipeline's master job is set to "pl:metamorph".
-> 
-> ***Example:*** `--job-name pl_id-42`
-
----  
-  `--singularity-cache SINGULARITY_CACHE`  
-> **Overrides the $SINGULARITY_CACHEDIR environment variable.**  
-> *type: path*  
-> *default: `--output OUTPUT/.singularity`*
->
-> Singularity will cache image layers pulled from remote registries. This ultimately speeds up the process of pull an image from DockerHub if an image layer already exists in the singularity cache directory. By default, the cache is set to the value provided to the `--output` argument. Please note that this cache cannot be shared across users. Singularity strictly enforces you own the cache directory and will return a non-zero exit code if you do not own the cache directory! See the `--sif-cache` option to create a shareable resource. 
-> 
-> ***Example:*** `--singularity-cache /data/$USER/.singularity`
-
----  
-  `--sif-cache SIF_CACHE`
-> **Path where a local cache of SIFs are stored.**  
-> *type: path*  
->
-> Uses a local cache of SIFs on the filesystem. This SIF cache can be shared across users if permissions are set correctly. If a SIF does not exist in the SIF cache, the image will be pulled from Dockerhub and a warning message will be displayed. The `metamorph cache` subcommand can be used to create a local SIF cache. Please see `metamorph cache` for more information. This command is extremely useful for avoiding DockerHub pull rate limits. It also remove any potential errors that could occur due to network issues or DockerHub being temporarily unavailable. We recommend running metamorph with this option when ever possible.
-> 
-> ***Example:*** `--singularity-cache /data/$USER/SIFs`
-
----  
-  `--threads THREADS`   
-> **Max number of threads for each process.**  
-> *type: int*  
-> *default: 2*
-> 
-> Max number of threads for each process. This option is more applicable when running the pipeline with `--mode local`.  It is recommended setting this vaule to the maximum number of CPUs available on the host machine.
-> 
-> ***Example:*** `--threads 12`
-
-
----  
-  `--tmp-dir TMP_DIR`   
-> **Max number of threads for each process.**  
-> *type: path*  
-> *default: `/lscratch/$SLURM_JOBID`*
-> 
-> Path on the file system for writing temporary output files. By default, the temporary directory is set to '/lscratch/$SLURM_JOBID' for backwards compatibility with the NIH's Biowulf cluster; however, if you are running the pipeline on another cluster, this option will need to be specified. Ideally, this path should point to a dedicated location on the filesystem for writing tmp files. On many systems, this location is set to somewhere in /scratch. If you need to inject a variable into this string that should NOT be expanded, please quote this options value in single quotes.
-> 
-> ***Example:*** `--tmp-dir /scratch/$USER/`
-
-### 2.4 Miscellaneous options  
-Each of the following arguments are optional, and do not need to be provided. 
-
-  `-h, --help`            
-> **Display Help.**  
-> *type: boolean flag*
-> 
-> Shows command's synopsis, help message, and an example command
-> 
-> ***Example:*** `--help`
-
-## 3. Example
-```bash 
-# Step 1.) Grab an interactive node,
-# do not run on head node!
-srun -N 1 -n 1 --time=1:00:00 --mem=8gb  --cpus-per-task=2 --pty bash
-module purge
-module load singularity snakemake
-
-# Step 2A.) Dry-run the pipeline
-./metamorph run --input .tests/*.R?.fastq.gz \
-                  --output /data/$USER/output \
-                  --mode slurm \
-                  --dry-run
-
-# Step 2B.) Run the metamorph pipeline
-# The slurm mode will submit jobs to 
-# the cluster. It is recommended running 
-# the pipeline in this mode.
-./metamorph run --input .tests/*.R?.fastq.gz \
-                  --output /data/$USER/output \
-                  --mode slurm
-```
+> ***Example:*** `--local`
