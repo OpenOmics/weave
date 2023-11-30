@@ -7,7 +7,7 @@ rule trim_w_fastp:
         json            = config["out_to"] + "/" + config["run_ids"] + "/" + config["project"] + "/{sids}/fastp/{sids}_fastp.json",
         out_read1       = config["out_to"] + "/" + config["run_ids"] + "/" + config["project"] + "/{sids}/fastp/{sids}_trimmed_R1.fastq.gz",
         out_read2       = config["out_to"] + "/" + config["run_ids"] + "/" + config["project"] + "/{sids}/fastp/{sids}_trimmed_R2.fastq.gz",
-    containerized: config["resources"]["sif"] + "dmux_ngsqc_0.0.1.sif"
+    containerized: config["resources"]["sif"] + "weave_ngsqc_0.0.1.sif"
     threads: 4,
     resources: mem_mb = 8192,
     log: config["out_to"] + "/logs/" + config["run_ids"] + "/" + config["project"] + "/fastp/{sids}.log",
@@ -35,7 +35,7 @@ rule fastq_screen:
         subset              = 1000000,
         aligner             = "bowtie2",
         output_dir          = lambda w: config['out_to'] + "/" + config['run_ids'] + "/" + config["project"] + "/" + w.sids + "/fastq_screen/",
-    containerized: config["resources"]["sif"] + "dmux_ngsqc_0.0.1.sif"
+    containerized: config["resources"]["sif"] + "weave_ngsqc_0.0.1.sif"
     threads: 4,
     resources: mem_mb = 8192,
     log: config['out_to'] + "/logs/" + config['run_ids'] +  "/" + config["project"] + "/fastq_screen/{sids}_R{rnum}.log",
@@ -65,7 +65,7 @@ rule kaiju_annotation:
         nodes               = config["resources"]["mounts"]["kaiju"]["to"] + "/nodes.dmp",
         names               = config["resources"]["mounts"]["kaiju"]["to"] + "/names.dmp",
         database            = config["resources"]["mounts"]["kaiju"]["to"] + "/kaiju_db_nr_euk.fmi",
-    containerized: config["resources"]["sif"] + "dmux_ngsqc_0.0.1.sif"
+    containerized: config["resources"]["sif"] + "weave_ngsqc_0.0.1.sif"
     log: config['out_to'] + "/logs/" + config['run_ids'] + "/" + config["project"] + "/kaiju/{sids}.log",
     threads: 24
     resources: 
@@ -97,7 +97,7 @@ rule kraken_annotation:
         kraken_log          = config['out_to'] + "/" + config['run_ids'] + "/" + config["project"] + "/{sids}/kraken/{sids}.log",
     params:
         kraken_db           = config["resources"]["mounts"]["kraken2"]["to"]
-    containerized: config["resources"]["sif"] + "dmux_ngsqc_0.0.1.sif"
+    containerized: config["resources"]["sif"] + "weave_ngsqc_0.0.1.sif"
     log: config['out_to'] + "/logs/" + config['run_ids'] + "/" + config["project"] + "/kraken/{sids}.log",
     threads: 24
     resources: 

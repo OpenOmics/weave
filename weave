@@ -2,13 +2,9 @@
 # -*- coding: UTF-8 -*-
 import argparse
 from pathlib import Path
-from scripts import utils, files, config
+from scripts import utils, files, config, cache
 
-main_parser = argparse.ArgumentParser(prog='dmux')
-sub_parser = main_parser.add_subparsers(help='sub-command help')
-parser_run = sub_parser.add_parser('run', help='run subcommand help')
-
-
+# ~~~~ sub commands ~~~~
 def run(args):
     """
     Main frontend for demultiplexing and QA/QC
@@ -23,8 +19,9 @@ def run(args):
             for i, sample in enumerate(sample_sheet.samples, start=1)
         ]
         project_list = list(set([_sample.Sample_Project for _sample in sample_sheet.samples]))
-        # TODO: enforce single project
-        assert len(project_list) == 1
+        if len(project_list) > 1:
+            raise NotImplementedError("Unable to process multiple projects currently.\n" + 
+                                      "Please file issue if this message is blocking: https://github.com/OpenOmics/weave/issues")
 
         pairs = ['1', '2'] if sample_sheet.is_paired_end else ['1']
 
@@ -50,11 +47,18 @@ def run(args):
     utils.exec_pipeline(exec_config, dry_run=args.dry_run, local=args.local)
 
 
+def get_cache(sub_args):
+    """
+    Main frontend for cache execution
+    """
+    cache.download(sub_args.cachedir, local=sub_args.local)
+    
+
+# ~~~~ argument parsing commands ~~~~
 if __name__ == '__main__':
-    main_parser = argparse.ArgumentParser(prog='dmux')
+    main_parser = argparse.ArgumentParser(prog='weave')
     sub_parsers = main_parser.add_subparsers(help='run subcommand help')
 
-    # ~~~ run subcommand ~~~
     parser_run = sub_parsers.add_parser('run')
     parser_run.add_argument('rundir', metavar='<run directory>', nargs="+", type=utils.valid_run_input, 
                             help='Full & complete run id (format YYMMDD_INSTRUMENTID_TIME_FLOWCELLID) or absolute paths')
@@ -70,6 +74,13 @@ if __name__ == '__main__':
     parser_run.add_argument('-l', '--local', action='store_true',
                             help='Execute pipeline locally without a dispatching executor')
 
+    parser_cache = sub_parsers.add_parser('cache')
+    parser_cache.add_argument('cachedir', metavar='<cache directory>', type=cache.valid_dir, 
+                            help='Relative or absolute path to directory for cache storage')
+    parser_cache.add_argument('-l', '--local', action='store_true',
+                            help='Execute pipeline locally without a dispatching executor')
+
     parser_run.set_defaults(func = run)
+    parser_cache.set_defaults(func = get_cache)
     args = main_parser.parse_args()
     args.func(args)

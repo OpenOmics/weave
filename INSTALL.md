@@ -1,4 +1,1 @@
-# How to install
-
-submodule
-python virtual env
+docs/install.md
