@@ -92,14 +92,29 @@ qa_qc_outputs = flatten(
 )
 
 
-all_outputs = flatten(
+bcl2fastq_outputs = flatten(
     [
-        # ~~ illumnia demultiplexing ~~
+        # ~~ All other Illumnia demultiplexing ~~
         expand("{out_to}/demux/{rid}/{project}/{sids}_R{rnums}_001.fastq.gz", **demux_expand_args),
         expand("{out_to}/demux/Stats/Stats.json", **demux_expand_args),
-        expand("{out_to}/demux/.DEMUX_COMPLETE", **demux_expand_args),
+        expand("{out_to}/demux/.B2F_DEMUX_COMPLETE", **demux_expand_args),
     ]
 )
+
+bclconvert_outputs = flatten(
+    [
+        # ~~ NextSeq2k demultiplexing ~~
+        expand("{out_to}/{rid}/{project}/{sids}_R{rnums}_001.fastq.gz", **demux_expand_args),
+        expand("{out_to}/demux/Reports/Demultiplex_Stats.csv", **demux_expand_args),
+        expand("{out_to}/demux/Reports/Adapter_Metrics.csv", **demux_expand_args),
+        expand("{out_to}/demux/.BC_DEMUX_COMPLETE", **demux_expand_args),
+    ]
+)
+
+if config['bclconvert']:
+    all_outputs = bclconvert_outputs
+else:
+    all_outputs = bcl2fastq
 
 
 if config["runqc"]:

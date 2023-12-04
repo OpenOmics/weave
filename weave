@@ -14,8 +14,9 @@ def run(args):
  
     for (rundir, run_infos) in runs:
         sample_sheet = run_infos['samplesheet']
+        import ipdb; ipdb.set_trace()
         sample_list = [
-            dict(sid=sample.Sample_ID+'_S'+str(i), r1_adapter=sample.index, r2_adapter=sample.index2) 
+            dict(sid=sample.Sample_ID+'_S'+str(i), r1_adapter=sample.Index, r2_adapter=sample.Index2) 
             for i, sample in enumerate(sample_sheet.samples, start=1)
         ]
         project_list = list(set([_sample.Sample_Project for _sample in sample_sheet.samples]))
@@ -33,7 +34,10 @@ def run(args):
         exec_config['rnums'].append(pairs)
 
         # ~~~ demultiplexing configuration ~~~
-        exec_config['bcl_files'].append([x for x in Path(rundir).rglob('*.bcl.*') if not 'tmp' in str(x)])
+        bcls = [x for x in Path(rundir).rglob('*.bcl.*') if not 'tmp' in str(x)]
+        if not bcls:
+            bcls = [x for x in Path(rundir).rglob('*.cbcl') if not 'tmp' in str(x)]
+        exec_config['bcl_files'].append(bcls)
 
         # ~~~ QC/QA configuration ~~~
         sample_sheet = run_infos['samplesheet']
@@ -44,6 +48,8 @@ def run(args):
         files.valid_run_output(args.output, dry_run=args.dry_run)
         exec_config['out_to'].append(str(Path(args.output).absolute()))
 
+
+    import ipdb; ipdb.set_trace()
     utils.exec_pipeline(exec_config, dry_run=args.dry_run, local=args.local)
 
 
@@ -73,6 +79,12 @@ if __name__ == '__main__':
                             help='Dry run the demultiplexing workflow')
     parser_run.add_argument('-l', '--local', action='store_true',
                             help='Execute pipeline locally without a dispatching executor')
+    # force endedness flags
+    endedness = parser_run.add_mutually_exclusive_group()
+    endedness.add_argument('--single_end', default=None, action='store_true', 
+                            help='Declare endedness of run (in cases in which it is not detectable from sample sheet), mutally exclusive to paired_end')
+    endedness.add_argument('--paired_end', default=None, action='store_true',
+                           help='Declare endedness of run (in cases in which it is not detectable from sample sheet), mutally exclusive to single_end')
 
     parser_cache = sub_parsers.add_parser('cache')
     parser_cache.add_argument('cachedir', metavar='<cache directory>', type=cache.valid_dir, 
