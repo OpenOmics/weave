@@ -5,6 +5,12 @@ from operator import itemgetter
 from dateutil import parser as dateparser
 
 
+class AttrDict(dict):
+    def __init__(self, *args, **kwargs):
+        super(AttrDict, self).__init__(*args, **kwargs)
+        self.__dict__ = self
+
+
 class IllumniaSampleSheet():
     """Class to parse illumnia sample sheet information according to the
     sample sheet format specified by [Illumina](https://support-docs.illumina.com/SHARE/SampleSheetv2/Content/SHARE/SampleSheetv2/SampleSheetStructure.htm)
@@ -15,7 +21,6 @@ class IllumniaSampleSheet():
         run(str): Run Identifer this single sequencing run
 
     """
-
     def __init__(self, samplesheet, end=None):
         self.sheet = self.parse_sheet(samplesheet)
         self.force_endedness = end
@@ -28,8 +33,8 @@ class IllumniaSampleSheet():
                 line = _line.strip()
                 first = _line.split(',')[0]
                 if first.startswith('[') and first.endswith(']'):
-                    sheet_sections[first[1:-1]] = []
                     this_section = first[1:-1]
+                    sheet_sections[this_section] = []
                 else:
                     sheet_sections[this_section].append(line)
 
@@ -41,6 +46,9 @@ class IllumniaSampleSheet():
 
         if 'Reads' in sheet_sections:
             self.process_simple_section(sheet_sections['Reads'])
+
+        if 'Data' not in sheet_sections and 'BCLConvert_Data' in sheet_sections:
+            sheet_sections['Data'] = sheet_sections['BCLConvert_Data']
 
         assert 'Data' in sheet_sections, 'No sample data within this sample sheet'
         self.process_csv_section(sheet_sections['Data'])
@@ -74,7 +82,7 @@ class IllumniaSampleSheet():
     def process_csv_section(self, section):
         section_io = StringIO("\n".join(section))
         section_csv = DictReader(section_io, delimiter=',')
-        setattr(self, 'data', list(section_csv))
+        setattr(self, 'data', list(map(AttrDict, section_csv)))
 
     
     @property

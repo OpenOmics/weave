@@ -7,7 +7,7 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 from os import access as check_access, R_OK, W_OK
 from functools import partial
-from .sample_sheet import SampleSheet
+from .samplesheet import IllumniaSampleSheet
 from .config import get_current_server, LABKEY_CONFIGS, DIRECTORY_CONFIGS
 
 
@@ -74,10 +74,7 @@ def sniff_samplesheet(ss):
         Given a sample sheet file return the appropriate function to parse the
         sheet.
     """
-    # TODO: 
-    #   catalogoue and check for multiple types of sample sheets, so far just
-    #   the NextSeq, MinSeq, CellRanger are the only supported formats
-    return SampleSheet
+    return IllumniaSampleSheet
 
 
 def parse_samplesheet(ss):
@@ -95,13 +92,10 @@ def is_dir_staged(server, run_dir):
         RTAComplete.txt - file transfer from instrument breadcrumb, CSV file with values:
             Run Date, Run time, Instrument ID        
     """
-    this_labkey_project = LABKEY_CONFIGS[server]['container_path']
-    TRANSFER_BREADCRUMB = 'RTAComplete.txt'
-    # SS_SHEET_EXISTS = LabKeyServer.runid2samplesheeturl(server, this_labkey_project, run_dir.name)
-
     analyzed_checks = [
-        Path(run_dir, TRANSFER_BREADCRUMB).exists(),
-        # SS_SHEET_EXISTS is not None
+        Path(run_dir, 'RTAComplete.txt').exists(),
+        Path(run_dir, 'SampleSheet.csv').exists(),
+        Path(run_dir, 'RunInfo.xml').exists(),
     ]
     return all(analyzed_checks)
 
@@ -117,7 +111,7 @@ def find_demux_dir(run_dir):
 
 def get_run_directories(runids, seq_dir=None):
     host = get_current_server()
-    seq_dirs = Path(seq_dir).absolute() if seq_dir else DIRECTORY_CONFIGS[host]['seq']
+    seq_dirs = Path(seq_dir).absolute() if seq_dir else Path(DIRECTORY_CONFIGS[host]['seqroot'])
     seq_contents = [_child for _child in seq_dirs.iterdir()]
     seq_contents_names = [child for child in map(lambda d: d.name, seq_contents)]
     

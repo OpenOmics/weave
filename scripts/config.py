@@ -148,10 +148,12 @@ def get_bigsky_seq_dirs():
 
 DIRECTORY_CONFIGS = {
     "bigsky": {
+        "seqroot": "/gs1/RTS/NextGen/SequencerRuns/",
         "seq": get_bigsky_seq_dirs(),
         "profile": Path(Path(__file__).parent.parent, "utils", "profiles", "bigsky").resolve(),
     },
     "biowulf": {
+        "seqroot": "/data/RTB_GRS/SequencerRuns/",
         "seq": get_biowulf_seq_dirs(),
         "profile": Path(Path(__file__).parent.parent, "utils", "profiles", "biowulf").resolve(),
     }
