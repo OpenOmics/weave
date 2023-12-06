@@ -104,7 +104,7 @@ bcl2fastq_outputs = flatten(
 bclconvert_outputs = flatten(
     [
         # ~~ NextSeq2k demultiplexing ~~
-        expand("{out_to}/{rid}/{project}/{sids}_R{rnums}_001.fastq.gz", **demux_expand_args),
+        expand("{out_to}/demux/{rid}/{project}/{sids}_R{rnums}_001.fastq.gz", **demux_expand_args),
         expand("{out_to}/demux/Reports/Demultiplex_Stats.csv", **demux_expand_args),
         expand("{out_to}/demux/Reports/Adapter_Metrics.csv", **demux_expand_args),
         expand("{out_to}/demux/.BC_DEMUX_COMPLETE", **demux_expand_args),
@@ -114,7 +114,7 @@ bclconvert_outputs = flatten(
 if config['bclconvert']:
     all_outputs = bclconvert_outputs
 else:
-    all_outputs = bcl2fastq
+    all_outputs = bcl2fastq_outputs
 
 
 if config["runqc"]:

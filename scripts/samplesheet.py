@@ -1,5 +1,6 @@
 from csv import DictReader
 from io import StringIO
+from pathlib import Path
 from datetime import datetime
 from operator import itemgetter
 from dateutil import parser as dateparser
@@ -22,6 +23,7 @@ class IllumniaSampleSheet():
 
     """
     def __init__(self, samplesheet, end=None):
+        self.path = Path(samplesheet).absolute()
         self.sheet = self.parse_sheet(samplesheet)
         self.force_endedness = end
     
@@ -47,14 +49,19 @@ class IllumniaSampleSheet():
         if 'Reads' in sheet_sections:
             self.process_simple_section(sheet_sections['Reads'])
 
+        if 'BCLConvert_Settings' in sheet_sections:
+            norm_names = {'AdapterRead1': 'Read01', 'AdapterRead2': 'Read02'}
+            self.process_simple_section(sheet_sections['BCLConvert_Settings'], rename=norm_names)
+
         if 'Data' not in sheet_sections and 'BCLConvert_Data' in sheet_sections:
             sheet_sections['Data'] = sheet_sections['BCLConvert_Data']
 
         assert 'Data' in sheet_sections, 'No sample data within this sample sheet'
-        self.process_csv_section(sheet_sections['Data'])
+        filtered_data = list(filter(lambda x: len(set(x)) > 1, sheet_sections['Data']))
+        self.process_csv_section(filtered_data)
 
 
-    def process_simple_section(self, section):
+    def process_simple_section(self, section, rename=None):
         """Simple section processing for Illumnia sample sheet. 
 
         Objective:
@@ -76,6 +83,8 @@ class IllumniaSampleSheet():
                 if index == 'Date':
                     setattr(self, index, dateparser.parse(second))
                 else:
+                    if rename and index in rename:
+                        index = rename[index]
                     setattr(self, index, second)
         return
 
@@ -100,16 +109,23 @@ class IllumniaSampleSheet():
        return getattr(self, 'Instrument', None)
 
     @property
+    def platform(self):
+        return getattr(self, 'InstrumentPlatform', None)
+    
+    @staticmethod
+    def intorlen(s):
+        "Cast to int if possible, otherwise get length"
+        try:
+            v = int(s)
+        except ValueError:
+            v = len(s)
+        return v
+
+    @property
     def adapters(self):
         r1 = getattr(self, 'Read01', None)
         r2 = getattr(self, 'Read02', None)
-        return list(map(int, filter(None, [r1, r2])))
-    
-    @property
-    def indexes(self):
-        i1 = getattr(self, 'Index01', None)
-        i2 = getattr(self, 'Index02', None)
-        return list(map(int, filter(None, [i1, i2])))
+        return list(map(self.intorlen, filter(None, [r1, r2])))
 
     @property
     def is_paired_end(self):
@@ -128,7 +144,3 @@ class IllumniaSampleSheet():
             return False
         else:
             raise ValueError('Unknown endedness from sample sheet')
-
-
-
-

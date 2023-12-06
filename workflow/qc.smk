@@ -2,6 +2,7 @@ qc_expand_args = {
     "rnums": config["rnums"],
     "sids": config['sids'],
 }
+demux_stats = config['out_to'] + "/demux/Reports/Demultiplex_Stats.csv" if config['bclconvert'] else config['out_to'] + "/demux/Stats/Stats.json"
 
 
 rule fastqc_untrimmed:
@@ -44,8 +45,8 @@ rule fastqc_trimmed:
 
 rule multiqc_report:
     input:
-        # bcl2fastq
-        config['out_to'] + "/demux/Stats/Stats.json",
+        # demux status
+        demux_stats,
         # fastqc on untrimmed reads
         expand(config['out_to'] + "/" + config["run_ids"] + "/" + config["project"] + "/{sids}/fastqc_untrimmed/{sids}_R{rnums}_001_fastqc.zip", **qc_expand_args),
         # fastqc on trimmed reads

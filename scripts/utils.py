@@ -174,6 +174,8 @@ def get_mounts(*extras):
 
     if extras:
         for extra in extras:
+            if ':' in str(extra):
+                extra = str(extra).split(':')[0]
             if not Path(extra).exists():
                 raise FileNotFoundError(f"Can't mount {str(extra)}, it doesn't exist!")
         mount_binds.extend(extras)
@@ -233,7 +235,13 @@ def exec_pipeline(configs, dry_run=False, local=False):
     for i in range(0, len(configs['run_ids'])):
         this_config = {k: (v[i] if k not in skip_config_keys else v) for k, v in configs.items() if v}
         this_config.update(profile_config)
+
         extra_to_mount = [this_config['out_to'], this_config['demux_input_dir']]
+        if this_config['bclconvert']:
+            bclcon_log_dir = Path(this_config['out_to'], "logs", "bclconvert_demux")
+            if not bclcon_log_dir.exists():
+                bclcon_log_dir.mkdir(mode=0o755, parents=True)
+            extra_to_mount.append(str(bclcon_log_dir) + ":" + "/var/log/bcl-convert:rw")
         singularity_binds = get_mounts(*extra_to_mount)
         config_file = Path(this_config['out_to'], '.config', f'config_job_{str(i)}.json').absolute()
         json.dump(this_config, open(config_file, 'w'), cls=PathJSONEncoder, indent=4)
@@ -269,3 +277,11 @@ def exec_pipeline(configs, dry_run=False, local=False):
         print(' '.join(map(str, this_cmd)))
         exec_snakemake(this_cmd, local=local, dry_run=dry_run, env=top_env, cwd=str(Path(this_config['out_to']).absolute()))
 
+
+def is_bclconvert(samplesheet):
+    BCLCONVERT_INSTRUMENTS = ('VH01716',)
+    BCLCONVERT_PLATFORMS = ('NextSeq1k2k',)
+    check = False
+    if samplesheet.instrument in BCLCONVERT_INSTRUMENTS or samplesheet.platform in BCLCONVERT_PLATFORMS:
+        check = True
+    return check

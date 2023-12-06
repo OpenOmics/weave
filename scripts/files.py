@@ -89,8 +89,15 @@ def is_dir_staged(server, run_dir):
     """
         filter check for wheter or not a directory has the appropriate breadcrumbs or not
 
-        RTAComplete.txt - file transfer from instrument breadcrumb, CSV file with values:
-            Run Date, Run time, Instrument ID        
+        CopyComplete.txt - file transfer from instrument breadcrumb, blank (won't be there on instruments != NextSeq2k)
+
+        RTAComplete.txt - sequencing breadcrumb, CSV file with values:
+            Run Date, Run time, Instrument ID
+
+        RunInfo.xml - XML metainformation 
+
+        Fastq Markers for DRAGEN demultiplexing
+            <run directory>/Analysis/*/Data/fastq/*.fastq.gz
     """
     analyzed_checks = [
         Path(run_dir, 'RTAComplete.txt').exists(),

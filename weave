@@ -14,12 +14,12 @@ def run(args):
  
     for (rundir, run_infos) in runs:
         sample_sheet = run_infos['samplesheet']
-        import ipdb; ipdb.set_trace()
         sample_list = [
             dict(sid=sample.Sample_ID+'_S'+str(i), r1_adapter=sample.Index, r2_adapter=sample.Index2) 
             for i, sample in enumerate(sample_sheet.samples, start=1)
         ]
         project_list = list(set([_sample.Sample_Project for _sample in sample_sheet.samples]))
+
         if len(project_list) > 1:
             raise NotImplementedError("Unable to process multiple projects currently.\n" + 
                                       "Please file issue if this message is blocking: https://github.com/OpenOmics/weave/issues")
@@ -27,6 +27,7 @@ def run(args):
         pairs = ['1', '2'] if sample_sheet.is_paired_end else ['1']
 
         # ~~~ general run configuration ~~~
+        exec_config['bclconvert'].append(utils.is_bclconvert(sample_sheet))
         exec_config['run_ids'].append(rundir.name)
         exec_config['demux_input_dir'].append(rundir.resolve())
         exec_config['sids'].append([x['sid'] for x in sample_list])
@@ -45,11 +46,12 @@ def run(args):
         exec_config['samples'].append(sample_list)
         
         # ~~~ output verification ~~~
-        files.valid_run_output(args.output, dry_run=args.dry_run)
-        exec_config['out_to'].append(str(Path(args.output).absolute()))
+        opdir = Path(args.output, rundir.name).absolute() \
+            if args.output is not None \
+                else Path(Path.cwd(), 'output').absolute()
+        files.valid_run_output(opdir, dry_run=args.dry_run)
+        exec_config['out_to'].append(opdir)
 
-
-    import ipdb; ipdb.set_trace()
     utils.exec_pipeline(exec_config, dry_run=args.dry_run, local=args.local)
 
 
