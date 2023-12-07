@@ -39,6 +39,7 @@ def run(args):
         if not bcls:
             bcls = [x for x in Path(rundir).rglob('*.cbcl') if not 'tmp' in str(x)]
         exec_config['bcl_files'].append(bcls)
+        exec_config['alreadydemux'].append(False)
 
         # ~~~ QC/QA configuration ~~~
         sample_sheet = run_infos['samplesheet']

@@ -111,13 +111,14 @@ bclconvert_outputs = flatten(
     ]
 )
 
-if config['bclconvert']:
-    all_outputs = bclconvert_outputs
+if not config['alreadydemux']:
+    if config['bclconvert']:
+        all_outputs = bclconvert_outputs
+    else:
+        all_outputs = bcl2fastq_outputs
+    if config["runqc"]:
+        all_outputs.extend(qa_qc_outputs)
 else:
-    all_outputs = bcl2fastq_outputs
-
-
-if config["runqc"]:
     all_outputs.extend(qa_qc_outputs)
 
 

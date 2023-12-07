@@ -93,7 +93,7 @@ def get_resource_config():
 
 def base_config(keys=None, qc=True):
     base_keys = ('runs', 'run_ids', 'project', 'rnums', 'bcl_files', \
-                'sample_sheet', 'samples', 'sids', 'out_to', 'demux_input_dir', 'bclconvert')
+                'sample_sheet', 'samples', 'sids', 'out_to', 'demux_input_dir', 'bclconvert', 'alreadydemux')
     this_config = {k: [] for k in base_keys}
     this_config['resources'] = get_resource_config()
     this_config['runqc'] = qc

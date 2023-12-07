@@ -47,7 +47,7 @@ class IllumniaSampleSheet():
             self.process_simple_section(sheet_sections['Settings'])
 
         if 'Reads' in sheet_sections:
-            self.process_simple_section(sheet_sections['Reads'])
+            self.process_v1_reads_section(sheet_sections['Reads'])
 
         if 'BCLConvert_Settings' in sheet_sections:
             norm_names = {'AdapterRead1': 'Read01', 'AdapterRead2': 'Read02'}
@@ -59,6 +59,21 @@ class IllumniaSampleSheet():
         assert 'Data' in sheet_sections, 'No sample data within this sample sheet'
         filtered_data = list(filter(lambda x: len(set(x)) > 1, sheet_sections['Data']))
         self.process_csv_section(filtered_data)
+
+
+    def process_v1_reads_section(self, section):
+        section = [x for x in section if set(x) != {','}]
+        r1, r2 = None, None
+        for i, line in enumerate(section, start=1):
+            if line.split(',')[0].isnumeric() and i == 1:
+                r1 = int(line.split(',')[0])
+            if line.split(',')[0].isnumeric() and i == 2:
+                r2 = int(line.split(',')[0])        
+        if r1:
+            setattr(self, 'Read01', r1)
+        if r2:
+            setattr(self, 'Read02', r2)
+        return
 
 
     def process_simple_section(self, section, rename=None):
@@ -91,7 +106,16 @@ class IllumniaSampleSheet():
     def process_csv_section(self, section):
         section_io = StringIO("\n".join(section))
         section_csv = DictReader(section_io, delimiter=',')
-        setattr(self, 'data', list(map(AttrDict, section_csv)))
+        csv_data = list(map(AttrDict, section_csv))
+        # reformat for consistency between v1 and v2 sample sheets
+        for row in csv_data:
+            if 'index' in row:
+                row['Index'] = row['index']
+                del row['index']
+            if 'index2' in row:
+                row['Index2'] = row['index2']
+                del row['index2']
+        setattr(self, 'data', csv_data)
 
     
     @property
@@ -144,3 +168,4 @@ class IllumniaSampleSheet():
             return False
         else:
             raise ValueError('Unknown endedness from sample sheet')
+

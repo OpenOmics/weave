@@ -75,17 +75,19 @@ rule bclconvert:
         runinfo                = expand("{run}/RunInfo.xml", run=config['demux_input_dir'] if config['bclconvert'] else demux_noop_args),
     params:
         out_dir                = config["out_to"] + "/demux/",
-        run                    = config["run_ids"],
-        project                = config["project"],
-        mv_dir                 = config["out_to"] + "/demux/" + config["run_ids"] + "/" + config["project"]
+        proj_dir               = config["out_to"] + "/demux/" + config["project"],
+        mv_dir                 = config["out_to"] + "/demux/" + config["run_ids"] + "/" + config["project"],
     output:
         seq_data               = expand("{out_to}/demux/{rid}/{project}/{sids}_R{rnums}_001.fastq.gz", **demux_expand_args if config['bclconvert'] else demux_noop_args),
         undetermined           = expand("{out_to}/demux/Undetermined_S0_R{rnums}_001.fastq.gz", **demux_expand_args if config['bclconvert'] else demux_noop_args),
         stats                  = expand("{out_to}/demux/Reports/Demultiplex_Stats.csv", **demux_expand_args if config['bclconvert'] else demux_noop_args),
-        metrics                = expand("{out_to}/demux/Reports/Adapter_Metrics.csv", **demux_expand_args if config['bclconvert'] else demux_noop_args),
+        ametrics               = expand("{out_to}/demux/Reports/Quality_Metrics.csv", **demux_expand_args if config['bclconvert'] else demux_noop_args),
+        qmetrics               = expand("{out_to}/demux/Reports/Adapter_Metrics.csv", **demux_expand_args if config['bclconvert'] else demux_noop_args),
+        top_unknown            = expand("{out_to}/demux/Reports/Top_Unknown_Barcodes.csv", **demux_expand_args if config['bclconvert'] else demux_noop_args),
         breadcrumb             = expand("{out_to}/demux/.BC_DEMUX_COMPLETE", **demux_expand_args if config['bclconvert'] else demux_noop_args),
     container: config["resources"]["sif"] + "weave_bclconvert_0.0.3.sif",
-    threads: 24
+    threads: 28
+    resources: mem_mb = int(64e3)
     shell:
         """
         bcl-convert \
@@ -100,6 +102,6 @@ rule bclconvert:
         --bcl-num-parallel-tiles 3 \
         --no-lane-splitting true
         mkdir -p {params.mv_dir}
-        mv {params.out_dir}/*.fastq.gz {params.mv_dir}
+        mv {params.proj_dir}/*.fastq.gz {params.mv_dir}
         touch {output.breadcrumb}
         """
