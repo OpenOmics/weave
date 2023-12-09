@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 import argparse
+import subprocess
 from pathlib import Path
 from scripts import utils, files, config, cache
 
@@ -29,7 +30,7 @@ def run(args):
         # ~~~ general run configuration ~~~
         exec_config['bclconvert'].append(utils.is_bclconvert(sample_sheet))
         exec_config['run_ids'].append(rundir.name)
-        exec_config['demux_input_dir'].append(rundir.resolve())
+        exec_config['demux_input_dir'].append(rundir.absolute())
         exec_config['sids'].append([x['sid'] for x in sample_list])
         exec_config['project'].append(project_list[0])
         exec_config['rnums'].append(pairs)
@@ -60,8 +61,14 @@ def get_cache(sub_args):
     """
     Main frontend for cache execution
     """
+    skele_config = {k: v if not isinstance(v, list) else "" for k, v in config.base_config(qc=True).items()}
     cache.download(sub_args.cachedir, local=sub_args.local)
     
+
+def unlock_dir(sub_args):
+    workflow = config.SNAKEFILE['Illumnia']
+    subprocess.Popen(['snakemake', '--unlock'])
+
 
 # ~~~~ argument parsing commands ~~~~
 if __name__ == '__main__':
@@ -94,8 +101,13 @@ if __name__ == '__main__':
                             help='Relative or absolute path to directory for cache storage')
     parser_cache.add_argument('-l', '--local', action='store_true',
                             help='Execute pipeline locally without a dispatching executor')
+    
+    parser_unlock = sub_parsers.add_parser('unlock')
+    parser_unlock.add_argument('unlockdir', metavar='<directory to unlock>', type=cache.valid_dir, 
+                            help='Relative or absolute path to directory for cache storage')
 
     parser_run.set_defaults(func = run)
     parser_cache.set_defaults(func = get_cache)
+    parser_unlock.set_defaults(func = unlock_dir)
     args = main_parser.parse_args()
     args.func(args)

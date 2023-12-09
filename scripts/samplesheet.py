@@ -26,6 +26,7 @@ class IllumniaSampleSheet():
         self.path = Path(samplesheet).absolute()
         self.sheet = self.parse_sheet(samplesheet)
         self.force_endedness = end
+        self.validate_sheet(self.sheet)
     
     def parse_sheet(self, sheet):
         sheet_sections = dict()
@@ -117,6 +118,12 @@ class IllumniaSampleSheet():
                 del row['index2']
         setattr(self, 'data', csv_data)
 
+
+    def validate_sheet(self, sheet):
+        # this is the space we can do any type of sample sheet validation for running 
+        # in our snakemake pipelines
+        # check values in self.sheet and continue or raise appropriate error
+        return
     
     @property
     def samples(self):

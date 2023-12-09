@@ -123,12 +123,14 @@ def exec_snakemake(popen_cmd, local=False, dry_run=False, env=None, cwd=None):
 
 
 def mk_sbatch_script(wd, cmd):
+    if not Path(wd, 'logs', 'masterjob').exists():
+        Path(wd, 'logs', 'masterjob').mkdir(mode=0o755, parents=True)
     master_job_script = \
-    """
+    f"""
     #!/bin/bash
     #SBATCH --job-name=weave_masterjob
-    #SBATCH --output=./slurm/%x_%j.out
-    #SBATCH --error=./slurm/%x_%j.err
+    #SBATCH --output={wd}/logs/masterjob/%x_%j.out
+    #SBATCH --error={wd}/logs/masterjob/%x_%j.err
     #SBATCH --ntasks=1
     #SBATCH --cpus-per-task=2
     #SBATCH --time=02-00:00:00
@@ -138,7 +140,7 @@ def mk_sbatch_script(wd, cmd):
     master_job_script += get_mods(init=True) + "\n"
     master_job_script += cmd
     master_job_script = '\n'.join([x.lstrip() for x in master_job_script.split('\n')])
-    master_script_location = Path(wd, 'slurm', 'master_jobscript.sh').absolute()
+    master_script_location = Path(wd, 'logs', 'masterjob', 'master_jobscript.sh').absolute()
     master_script_location.parent.mkdir(mode=0o755, parents=True, exist_ok=True)
     with open(master_script_location, 'w') as fo:
         fo.write(master_job_script)
@@ -202,17 +204,6 @@ def get_mounts(*extras):
     return "\'-B " + ','.join(mounts) + "\'"
 
 
-def ensure_pe_adapters(samplesheets):
-    pe = []
-    for ss in samplesheets:
-        this_is_pe = [ss.is_paired_end]
-        for this_sample in ss.samples:
-            this_is_pe.append(str(this_sample.index) not in ('', None, 'nan'))
-            this_is_pe.append(str(this_sample.index2) not in ('', None, 'nan'))
-        pe.extend(this_is_pe)
-    return all(pe)
-
-
 def exec_pipeline(configs, dry_run=False, local=False):
     """
         Execute the BCL->FASTQ pipeline.
@@ -248,13 +239,13 @@ def exec_pipeline(configs, dry_run=False, local=False):
         top_env = {}
         top_env['PATH'] = os.environ["PATH"]
         top_env['SNK_CONFIG'] = str(config_file.absolute())
-        # top_env['LOAD_MODULES'] = get_mods()
         top_env['SINGULARITY_CACHEDIR'] = str(Path(this_config['out_to'], '.singularity').absolute())
         this_cmd = [
             "snakemake",
             "-pr",
             "--use-singularity",
             "--rerun-incomplete",
+            "--keep-incomplete",
             "--rerun-triggers", "mtime",
             "--verbose",
             "-s", snake_file,

@@ -14,32 +14,35 @@ rule bcl2fastq:
         Copyright (c) 2007-2017 Illumina, Inc.
     """
     input:
-        run_dir                = config['demux_input_dir'],
+        run_dir                = config['demux_input_dir'] if not config['bclconvert'] else [],
         binary_base_calls      = expand("{files}", files=config['bcl_files'] if not config['bclconvert'] else demux_noop_args),
-        samplesheets           = expand("{run}/SampleSheet.csv", run=config['demux_input_dir'] if not config['bclconvert'] else demux_noop_args)
+        samplesheet            = config["sample_sheet"] if not config['bclconvert'] else [],
     output:
-        seq_data               = expand("{out_to}/demux/{rid}/{project}/{sids}_R{rnums}_001.fastq.gz", **demux_expand_args if not config['bclconvert'] else demux_noop_args),
+        seq_data               = expand("{out_to}/demux/{project}/{sids}_R{rnums}_001.fastq.gz", **demux_expand_args if not config['bclconvert'] else demux_noop_args),
         undetermined           = expand("{out_to}/demux/Undetermined_S0_R{rnums}_001.fastq.gz", **demux_expand_args if not config['bclconvert'] else demux_noop_args),
         stats                  = expand("{out_to}/demux/Stats/Stats.json", **demux_expand_args if not config['bclconvert'] else demux_noop_args),
         breadcrumb             = expand("{out_to}/demux/.B2F_DEMUX_COMPLETE", **demux_expand_args if not config['bclconvert'] else demux_noop_args),
     params:
-        out_dir                = config["out_to"] + "/demux/",
-        run                    = config["run_ids"],
-        project                = config["project"],
+        out_dir                = config["out_to"] + "/demux",
     container: config["resources"]["sif"] + "bcl2fastq.sif",
-    threads: 24
+    threads: 26
+    resources: 
+        mem_mb = "32g",
+        slurm_partition = "quick",
+        runtime = 60*4,
+        tasks = 1,
+        disk_mb = 5*1024
     shell: 
-        r"""
-            mkdir -p {params.out_dir}
+        """
             bcl2fastq \
+            --sample-sheet {input.samplesheet} \
             --runfolder-dir {input.run_dir} \
-            --min-log-level=INFO \
-            -r {threads} -p {threads} -w {threads} \
-            --no-lane-splitting -o {params.out_dir}
-            echo "run dir: {params.out_dir}/{params.run}/{params.project}"
-            echo "proj dir: {params.out_dir}/{params.project}"
-            mkdir -p {params.out_dir}/{params.run}
-            mv {params.out_dir}/{params.project} {params.out_dir}/{params.run}
+            --min-log-level=TRACE \
+            -r 8 -p 8 -w 8 \
+            --fastq-compression-level 9 \
+            --no-lane-splitting \
+            -o {params.out_dir}
+            find . > .fqlist
             touch {output.breadcrumb}
         """
 
@@ -76,9 +79,8 @@ rule bclconvert:
     params:
         out_dir                = config["out_to"] + "/demux/",
         proj_dir               = config["out_to"] + "/demux/" + config["project"],
-        mv_dir                 = config["out_to"] + "/demux/" + config["run_ids"] + "/" + config["project"],
     output:
-        seq_data               = expand("{out_to}/demux/{rid}/{project}/{sids}_R{rnums}_001.fastq.gz", **demux_expand_args if config['bclconvert'] else demux_noop_args),
+        seq_data               = expand("{out_to}/demux/{project}/{sids}_R{rnums}_001.fastq.gz", **demux_expand_args if config['bclconvert'] else demux_noop_args),
         undetermined           = expand("{out_to}/demux/Undetermined_S0_R{rnums}_001.fastq.gz", **demux_expand_args if config['bclconvert'] else demux_noop_args),
         stats                  = expand("{out_to}/demux/Reports/Demultiplex_Stats.csv", **demux_expand_args if config['bclconvert'] else demux_noop_args),
         ametrics               = expand("{out_to}/demux/Reports/Quality_Metrics.csv", **demux_expand_args if config['bclconvert'] else demux_noop_args),
@@ -86,7 +88,8 @@ rule bclconvert:
         top_unknown            = expand("{out_to}/demux/Reports/Top_Unknown_Barcodes.csv", **demux_expand_args if config['bclconvert'] else demux_noop_args),
         breadcrumb             = expand("{out_to}/demux/.BC_DEMUX_COMPLETE", **demux_expand_args if config['bclconvert'] else demux_noop_args),
     container: config["resources"]["sif"] + "weave_bclconvert_0.0.3.sif",
-    threads: 28
+    log: config["out_to"] + "/logs/bclconvert/" + config["run_ids"] + "_" + config["project"] + ".log",
+    threads: 75
     resources: mem_mb = int(64e3)
     shell:
         """
@@ -96,12 +99,10 @@ rule bclconvert:
         --output-directory {params.out_dir} \
         --fastq-gzip-compression-level 9 \
         --bcl-sampleproject-subdirectories true \
-        --bcl-num-conversion-threads 8 \
-        --bcl-num-compression-threads 8 \
-        --bcl-num-decompression-threads 8 \
+        --bcl-num-conversion-threads 24 \
+        --bcl-num-compression-threads 24 \
+        --bcl-num-decompression-threads 24 \
         --bcl-num-parallel-tiles 3 \
         --no-lane-splitting true
-        mkdir -p {params.mv_dir}
-        mv {params.proj_dir}/*.fastq.gz {params.mv_dir}
         touch {output.breadcrumb}
         """
