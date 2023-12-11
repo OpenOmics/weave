@@ -20,14 +20,14 @@ def run(args):
             for i, sample in enumerate(sample_sheet.samples, start=1)
         ]
         project_list = list(set([_sample.Sample_Project for _sample in sample_sheet.samples]))
-
         if len(project_list) > 1:
             raise NotImplementedError("Unable to process multiple projects currently.\n" + 
                                       "Please file issue if this message is blocking: https://github.com/OpenOmics/weave/issues")
-
         pairs = ['1', '2'] if sample_sheet.is_paired_end else ['1']
+         
 
         # ~~~ general run configuration ~~~
+        exec_config['demux_data'].append(files.check_if_demuxed(rundir))
         exec_config['bclconvert'].append(utils.is_bclconvert(sample_sheet))
         exec_config['run_ids'].append(rundir.name)
         exec_config['demux_input_dir'].append(rundir.absolute())

@@ -28,6 +28,10 @@ def get_all_seq_dirs(top_dir, server):
     return _dirs
 
 
+def check_if_demuxed(data_dir):
+    return 0
+
+
 def valid_run_output(output_directory, dry_run=False):
     if dry_run:
         return Path(output_directory).absolute()
