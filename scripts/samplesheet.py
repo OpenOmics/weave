@@ -68,8 +68,10 @@ class IllumniaSampleSheet():
         for i, line in enumerate(section, start=1):
             if line.split(',')[0].isnumeric() and i == 1:
                 r1 = int(line.split(',')[0])
-            if line.split(',')[0].isnumeric() and i == 2:
-                r2 = int(line.split(',')[0])        
+            elif line.split(',')[0].isnumeric() and i == 2:
+                r2 = int(line.split(',')[0])
+            else:
+                self.process_simple_section([line])        
         if r1:
             setattr(self, 'Read01', r1)
         if r2:
