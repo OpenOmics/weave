@@ -26,7 +26,7 @@ class IllumniaSampleSheet():
         self.path = Path(samplesheet).absolute()
         self.sheet = self.parse_sheet(samplesheet)
         self.force_endedness = end
-        self.validate_sheet(self.sheet)
+        self.validate_sheet()
     
     def parse_sheet(self, sheet):
         sheet_sections = dict()
@@ -106,8 +106,10 @@ class IllumniaSampleSheet():
 
     def process_csv_section(self, section):
         section_io = StringIO("\n".join(section))
-        section_csv = DictReader(section_io, delimiter=',')
-        csv_data = list(map(AttrDict, section_csv))
+        csv_data = []
+        for row in DictReader(section_io, delimiter=','):
+            csv_data.append(AttrDict({k: v for k, v in row.items() if k != '' and v != ''}))
+        
         # reformat for consistency between v1 and v2 sample sheets
         for row in csv_data:
             if 'index' in row:
@@ -119,11 +121,13 @@ class IllumniaSampleSheet():
         setattr(self, 'data', csv_data)
 
 
-    def validate_sheet(self, sheet):
+    def validate_sheet(self):
         # this is the space we can do any type of sample sheet validation for running 
         # in our snakemake pipelines
         # check values in self.sheet and continue or raise appropriate error
-        return
+        for row in self.data:
+            if not getattr(row, 'Sample_Project', None):
+                raise AttributeError("Sample sheet does not have 'Sample_Project' specified for each sample.")
     
     @property
     def samples(self):

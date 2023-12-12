@@ -1,7 +1,13 @@
+if config['demux_data']:
+    trim_input_affix = 'dragen'
+else:
+    trim_input_affix = '001'
+
+
 rule trim_w_fastp:
     input:
-        in_read1        = config["out_to"] + "/demux/" + config["project"] + "/{sids}_R1_001.fastq.gz",
-        in_read2        = config["out_to"] + "/demux/" + config["project"] + "/{sids}_R2_001.fastq.gz" if len(config['rnums']) == 2 else [],
+        in_read1        = config["out_to"] + "/demux/" + config["project"] + "/{sids}_R1_" + trim_input_affix + ".fastq.gz",
+        in_read2        = config["out_to"] + "/demux/" + config["project"] + "/{sids}_R2_" + trim_input_affix + ".fastq.gz" if len(config['rnums']) == 2 else [],
     output:
         html            = config["out_to"] + "/" + config["run_ids"] + "/" + config["project"] + "/{sids}/fastp/{sids}.html",
         json            = config["out_to"] + "/" + config["run_ids"] + "/" + config["project"] + "/{sids}/fastp/{sids}_fastp.json",
@@ -10,7 +16,7 @@ rule trim_w_fastp:
     containerized: config["resources"]["sif"] + "weave_ngsqc_0.0.1.sif"
     threads: 4,
     params:
-        read_args = lambda _, output, input: f"--in2 {input.in_read2} --out2 {_output.out_read2} --detect_adapter_for_pe""" if len(config['rnums']) == 2 else ""
+        read_args = lambda _, output, input: f"--in2 {input.in_read2} --out2 {output.out_read2} --detect_adapter_for_pe""" if len(config['rnums']) == 2 else ""
     resources: mem_mb = 8192,
     log: config["out_to"] + "/logs/" + config["run_ids"] + "/" + config["project"] + "/fastp/{sids}.log",
     shell:

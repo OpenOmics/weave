@@ -1,3 +1,6 @@
+import shutil
+
+
 demux_expand_args = {
     "project": config["project"],
     "out_to": config["out_to"],
@@ -6,6 +9,10 @@ demux_expand_args = {
     "sids": config['sids'],
 }
 demux_noop_args = dict.fromkeys(demux_expand_args.keys(), [])
+
+
+localrules: fastq_linker_from_dragen
+
 
 rule bcl2fastq:
     """
@@ -106,3 +113,33 @@ rule bclconvert:
         --no-lane-splitting true
         touch {output.breadcrumb}
         """
+
+
+rule fastq_linker_from_dragen:
+    input:
+        read1                  = expand(config["demux_input_dir"] + "/Analysis/1/Data/fastq/{full_sid}_R1_001.fastq.gz", full_sid=config["sids"]),
+        read2                  = expand(config["demux_input_dir"] + "/Analysis/1/Data/fastq/{full_sid}_R2_001.fastq.gz", full_sid=config["sids"]),
+        adapter_metrics        = config["demux_input_dir"] + "/Analysis/1/Data/Reports/Adapter_Metrics.csv",
+        qual_metrics           = config["demux_input_dir"] + "/Analysis/1/Data/Reports/Quality_Metrics.csv",
+        demux_stats            = config["demux_input_dir"] + "/Analysis/1/Data/Reports/Demultiplex_Stats.csv",
+    output:
+        out_read1              = expand(config["out_to"] + "/demux/" + config["project"] + "/{full_sid}_R1_dragen.fastq.gz", full_sid=config["sids"]),
+        out_read2              = expand(config["out_to"] + "/demux/" + config["project"] + "/{full_sid}_R2_dragen.fastq.gz", full_sid=config["sids"]),
+        breadcrumb             = expand(config["out_to"] + "/demux/.breadcrumb/{full_sid}", full_sid=config["sids"]),
+        adapter_metrics_out    = config["out_to"] + "/demux/dragen_reports/Adapter_Metrics.csv",
+        qual_metrics_out       = config["out_to"] + "/demux/dragen_reports/Quality_Metrics.csv",
+        demux_stats_out        = config["out_to"] + "/demux/dragen_reports/Demultiplex_Stats.csv",
+    run:
+        demux_dir = Path(config["out_to"], 'demux').resolve()
+        bc_dir = Path(demux_dir, '.breadcrumb').resolve()
+        if not bc_dir.exists():
+            bc_dir.mkdir(mode=0o755)
+        for r1, r2, sid in zip(input.read1, input.read2, config["sids"]):
+            Path(demux_dir, config["project"], f"{sid}_R1_dragen.fastq.gz").absolute().symlink_to(Path(r1))
+            Path(demux_dir, config["project"], f"{sid}_R2_dragen.fastq.gz").absolute().symlink_to(Path(r2))
+            Path(bc_dir, sid).touch(mode=0o755)
+        shutil.copyfile(input.adapter_metrics, output.adapter_metrics_out)
+        shutil.copyfile(input.qual_metrics, output.qual_metrics_out)
+        shutil.copyfile(input.demux_stats, output.demux_stats_out)
+
+    

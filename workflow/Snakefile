@@ -8,10 +8,7 @@ def flatten(this_list):
     return [i[x] for i in this_list for x in range(len(i))]
 
 
-envvars:
-    "SNK_CONFIG",
-
-
+envvars: "SNK_CONFIG",
 configfile: os.environ["SNK_CONFIG"]
 
 
@@ -21,7 +18,7 @@ demux_expand_args = {
     "out_to": config["out_to"],
     "rid": config["run_ids"],
     "rnums": config["rnums"],
-    "sample_num": [
+    "snums": [
         str(x) for x in range(1, len(config['sids'])+1)
     ],
 }
@@ -111,14 +108,23 @@ bclconvert_outputs = flatten(
     ]
 )
 
-if not config['alreadydemux']:
+dragen_linker_outputs = flatten(
+    [
+        # ~~ NextSeq2k pre-demultiplexed data ~~
+        expand("{out_to}/demux/.breadcrumb/{sids}", **demux_expand_args),
+        expand("{out_to}/demux/{project}/{sids}_R{rnums}_dragen.fastq.gz", **demux_expand_args),
+    ]
+)
+
+if not config['demux_data']:
     if config['bclconvert']:
         all_outputs = bclconvert_outputs
     else:
         all_outputs = bcl2fastq_outputs
-    if config["runqc"]:
-        all_outputs.extend(qa_qc_outputs)
 else:
+    all_outputs = dragen_linker_outputs
+
+if config["runqc"]:
     all_outputs.extend(qa_qc_outputs)
 
 

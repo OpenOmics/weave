@@ -29,7 +29,11 @@ def get_all_seq_dirs(top_dir, server):
 
 
 def check_if_demuxed(data_dir):
-    return 0
+    is_demuxed = False
+    if Path(data_dir, 'Analysis').exists():
+        if list(Path(data_dir, 'Analysis').rglob('*.fastq*')):
+            is_demuxed = True
+    return is_demuxed
 
 
 def valid_run_output(output_directory, dry_run=False):

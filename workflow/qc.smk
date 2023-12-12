@@ -2,12 +2,22 @@ qc_expand_args = {
     "rnums": config["rnums"],
     "sids": config['sids'],
 }
-demux_stats = config['out_to'] + "/demux/Reports/Demultiplex_Stats.csv" if config['bclconvert'] else config['out_to'] + "/demux/Stats/Stats.json"
 
+
+if config['demux_data']:
+    trim_input_suffix = 'dragen'
+    demux_stats = config["out_to"] + "/demux/dragen_reports/Demultiplex_Stats.csv"
+else:
+    trim_input_suffix = '001'
+    if config['bclconvert']:
+        demux_stats = config['out_to'] + "/demux/Reports/Demultiplex_Stats.csv"
+    else:
+        demux_stats = config['out_to'] + "/demux/Stats/Stats.json"
+    
 
 rule fastqc_untrimmed:
     input:
-        samples     = config['out_to'] + "/demux/" + config["project"] + "/{sids}_R{rnums}_001.fastq.gz",
+        samples     = config['out_to'] + "/demux/" + config["project"] + "/{sids}_R{rnums}_" + trim_input_suffix + ".fastq.gz",
     output:   
         html        = config['out_to'] + "/" + config["run_ids"] + "/" + config["project"] + "/{sids}/fastqc_untrimmed/{sids}_R{rnums}_001_fastqc.html",
         fqreport    = config['out_to'] + "/" + config["run_ids"] + "/" + config["project"] + "/{sids}/fastqc_untrimmed/{sids}_R{rnums}_001_fastqc.zip",
