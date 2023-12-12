@@ -157,7 +157,7 @@ def get_run_directories(runids, seq_dir=None):
         elif xml_rid and Path(run_p, f'SampleSheet_{xml_rid}.csv').exists():
             this_run_info['samplesheet'] = parse_samplesheet(Path(run_p, f'SampleSheet_{xml_rid}.csv').absolute())
         else:
-            raise FileNotFoundError(f'Run {rid}({run_p}) does not have a findable sample sheet.')
+            raise FileNotFoundError(f'Run {rid}({run_p}) does not have a find-able sample sheet.')
         
         this_run_info.update({info.tag: info.text for run in runinfo_xml.getroot() for info in run \
                              if info.text is not None and info.text.strip() not in ('\n', '')})
