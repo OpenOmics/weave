@@ -102,10 +102,7 @@ def is_dir_staged(server, run_dir):
         RTAComplete.txt - sequencing breadcrumb, CSV file with values:
             Run Date, Run time, Instrument ID
 
-        RunInfo.xml - XML metainformation 
-
-        Fastq Markers for DRAGEN demultiplexing
-            <run directory>/Analysis/*/Data/fastq/*.fastq.gz
+        RunInfo.xml - XML metainformation (RunID, Tiles, etc)
     """
     analyzed_checks = [
         Path(run_dir, 'RTAComplete.txt').exists(),
@@ -146,16 +143,24 @@ def get_run_directories(runids, seq_dir=None):
     for run_p in run_paths:
         rid = run_p.name
         this_run_info = dict(run_id=rid)
+        runinfo_xml = ET.parse(Path(run_p, 'RunInfo.xml').absolute())
+
+        try:
+            xml_rid = runinfo_xml.find("Run").attrib['Id']
+        except (KeyError, AttributeError):
+            xml_rid = None
+
         if Path(run_p, 'SampleSheet.csv').exists():
             this_run_info['samplesheet'] = parse_samplesheet(Path(run_p, 'SampleSheet.csv').absolute())
+        elif Path(run_p, f'SampleSheet_{rid}.csv').exists():
+            this_run_info['samplesheet'] = parse_samplesheet(Path(run_p, f'SampleSheet_{rid}.csv').absolute())
+        elif xml_rid and Path(run_p, f'SampleSheet_{xml_rid}.csv').exists():
+            this_run_info['samplesheet'] = parse_samplesheet(Path(run_p, f'SampleSheet_{xml_rid}.csv').absolute())
         else:
-            raise FileNotFoundError(f'Run {rid}({run_p}) does not have a sample sheet.')
-        if Path(run_p, 'RunInfo.xml').exists():
-            run_xml = ET.parse(Path(run_p, 'RunInfo.xml').absolute()).getroot()
-            this_run_info.update({info.tag: info.text for run in run_xml for info in run \
+            raise FileNotFoundError(f'Run {rid}({run_p}) does not have a findable sample sheet.')
+        
+        this_run_info.update({info.tag: info.text for run in runinfo_xml.getroot() for info in run \
                              if info.text is not None and info.text.strip() not in ('\n', '')})
-        else:
-            raise FileNotFoundError(f'Run {rid}({run_p}) does not have a RunInfo.xml file.')
         run_return.append((run_p, this_run_info))
 
     if invalid_runs:
