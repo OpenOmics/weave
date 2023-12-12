@@ -121,7 +121,7 @@ def find_demux_dir(run_dir):
     return Path(demux_stat_files[0], '..').absolute()
 
 
-def get_run_directories(runids, seq_dir=None):
+def get_run_directories(runids, seq_dir=None, sheetname=None):
     host = get_current_server()
     seq_dirs = Path(seq_dir).absolute() if seq_dir else Path(DIRECTORY_CONFIGS[host]['seqroot'])
     seq_contents = [_child for _child in seq_dirs.iterdir()]
@@ -141,24 +141,25 @@ def get_run_directories(runids, seq_dir=None):
             invalid_runs.append(run)
 
     for run_p in run_paths:
-        rid = run_p.name
-        this_run_info = dict(run_id=rid)
         runinfo_xml = ET.parse(Path(run_p, 'RunInfo.xml').absolute())
-
         try:
-            xml_rid = runinfo_xml.find("Run").attrib['Id']
+            rid = runinfo_xml.find("Run").attrib['Id']
         except (KeyError, AttributeError):
-            xml_rid = None
+            rid = run_p.name
+        this_run_info = dict(run_id=rid)
 
         if Path(run_p, 'SampleSheet.csv').exists():
-            this_run_info['samplesheet'] = parse_samplesheet(Path(run_p, 'SampleSheet.csv').absolute())
+            sheet = parse_samplesheet(Path(run_p, 'SampleSheet.csv').absolute())
         elif Path(run_p, f'SampleSheet_{rid}.csv').exists():
-            this_run_info['samplesheet'] = parse_samplesheet(Path(run_p, f'SampleSheet_{rid}.csv').absolute())
-        elif xml_rid and Path(run_p, f'SampleSheet_{xml_rid}.csv').exists():
-            this_run_info['samplesheet'] = parse_samplesheet(Path(run_p, f'SampleSheet_{xml_rid}.csv').absolute())
+            sheet = Path(run_p, f'SampleSheet_{rid}.csv').absolute()
+        elif Path(run_p, f'SampleSheet_{rid}.csv').exists():
+            sheet = Path(run_p, f'SampleSheet_{rid}.csv').absolute()
+        elif sheetname and Path(run_p, sheetname).exists():
+            sheet = Path(run_p, sheetname).absolute()
         else:
             raise FileNotFoundError(f'Run {rid}({run_p}) does not have a find-able sample sheet.')
         
+        this_run_info['samplesheet'] = parse_samplesheet(sheet)
         this_run_info.update({info.tag: info.text for run in runinfo_xml.getroot() for info in run \
                              if info.text is not None and info.text.strip() not in ('\n', '')})
         run_return.append((run_p, this_run_info))

@@ -77,7 +77,7 @@ If you use this software, please cite it as below:
     ```
 
 ## References
-<sup>**1.**  (Philip Ewels, Måns Magnusson, Sverker Lundin, Max Käller, MultiQC: summarize analysis results for multiple tools and samples in a single report, Bioinformatics, Volume 32, Issue 19, October 2016, Pages 3047–3048.)[https://doi.org/10.1093/bioinformatics/btw354]</sup>  
+<sup>**1.**  <a href="https://doi.org/10.1093/bioinformatics/btw354">Philip Ewels, Måns Magnusson, Sverker Lundin, Max Käller, MultiQC: summarize analysis results for multiple tools and samples in a single report, Bioinformatics, Volume 32, Issue 19, October 2016, Pages 3047–3048.</a></sup>  
 <sup>**2.**  [Kurtzer GM, Sochat V, Bauer MW (2017). Singularity: Scientific containers for mobility of compute. PLoS ONE 12(5): e0177459.](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0177459)</sup>  
 <sup>**3.**  [Koster, J. and S. Rahmann (2018). "Snakemake-a scalable bioinformatics workflow engine." Bioinformatics 34(20): 3600.](https://academic.oup.com/bioinformatics/article/28/19/2520/290322)</sup>  
 <sup>**4.**  [Menzel P., Ng K.L., Krogh A. (2016) Fast and sensitive taxonomic classification for metagenomics with Kaiju. Nat. Commun. 7:11257](http://www.nature.com/ncomms/2016/160413/ncomms11257/full/ncomms11257.html)</sup>  

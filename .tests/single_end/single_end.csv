@@ -2,7 +2,7 @@
 IEMFileVersion,2.20.0.422
 Investigator Name,NA
 Date,2023-09-21 14:15:47
-Workflow,LabKey Sample Sheet Gen
+Workflow,TestSingleEndSampleSheet
 Application,NextSeq
 Instrument Type,NextSeq
 Instrument,NB551182

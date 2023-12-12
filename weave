@@ -10,7 +10,7 @@ def run(args):
     """
     Main frontend for demultiplexing and QA/QC
     """
-    runs = files.get_run_directories(args.rundir, seq_dir=args.seq_dir)
+    runs = files.get_run_directories(args.rundir, seq_dir=args.seq_dir, sheetname=args.sheetname)
     exec_config = config.base_config(qc=args.noqc)
  
     for (rundir, run_infos) in runs:
@@ -86,6 +86,8 @@ if __name__ == '__main__':
                             help='Dry run the demultiplexing workflow')
     parser_run.add_argument('-n', '--noqc', action='store_false',
                             help='Dry run the demultiplexing workflow')
+    parser_run.add_argument('--sheetname', metavar='Sample Sheet Filename', 
+                            help='Name of the sample sheet file to look for (default is SampleSheet.csv)')
     parser_run.add_argument('-l', '--local', action='store_true',
                             help='Execute pipeline locally without a dispatching executor')
     # force endedness flags

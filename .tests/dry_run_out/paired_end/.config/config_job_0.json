@@ -1,0 +1,136 @@
+{
+    "run_ids": "paired_end",
+    "project": "EXP_PROJ_Doe",
+    "rnums": [
+        "1",
+        "2"
+    ],
+    "bcl_files": [],
+    "sample_sheet": "/gs1/home/routsongrm/git/OpenOmics/weave/.tests/paired_end/paired_end.csv",
+    "samples": [
+        {
+            "sid": "LIB_04565_01_S1",
+            "r1_adapter": "TTACCGAC",
+            "r2_adapter": "CGTATTCG"
+        },
+        {
+            "sid": "LIB_04566_01_S2",
+            "r1_adapter": "TCGGATTC",
+            "r2_adapter": "TAGTTGCG"
+        },
+        {
+            "sid": "LIB_04567_01_S3",
+            "r1_adapter": "CTGTACCA",
+            "r2_adapter": "AGTCTGTG"
+        },
+        {
+            "sid": "LIB_04568_01_S4",
+            "r1_adapter": "TACGGTCT",
+            "r2_adapter": "GCAATGGA"
+        },
+        {
+            "sid": "LIB_04569_01_S5",
+            "r1_adapter": "AAGACCGT",
+            "r2_adapter": "CAATCGAC"
+        },
+        {
+            "sid": "LIB_04570_01_S6",
+            "r1_adapter": "GAGAGTAC",
+            "r2_adapter": "TGCTTCCA"
+        },
+        {
+            "sid": "LIB_04571_01_S7",
+            "r1_adapter": "TAGGAGCT",
+            "r2_adapter": "GTTAAGGC"
+        },
+        {
+            "sid": "LIB_04572_01_S8",
+            "r1_adapter": "AGTGACCT",
+            "r2_adapter": "CTCCTAGA"
+        },
+        {
+            "sid": "LIB_04573_01_S9",
+            "r1_adapter": "TCTACGCA",
+            "r2_adapter": "GGCTATTG"
+        },
+        {
+            "sid": "LIB_04574_01_S10",
+            "r1_adapter": "GCAATTCC",
+            "r2_adapter": "TGTTCGAG"
+        },
+        {
+            "sid": "LIB_04575_01_S11",
+            "r1_adapter": "CTCAGAAG",
+            "r2_adapter": "AACTTGCC"
+        },
+        {
+            "sid": "LIB_04576_01_S12",
+            "r1_adapter": "GTCCTAAG",
+            "r2_adapter": "TGGTAGCT"
+        },
+        {
+            "sid": "LIB_04577_01_S13",
+            "r1_adapter": "GAACGAAG",
+            "r2_adapter": "GGTGATTC"
+        },
+        {
+            "sid": "LIB_04578_01_S14",
+            "r1_adapter": "CGAATTGC",
+            "r2_adapter": "CACCTTAC"
+        }
+    ],
+    "sids": [
+        "LIB_04565_01_S1",
+        "LIB_04566_01_S2",
+        "LIB_04567_01_S3",
+        "LIB_04568_01_S4",
+        "LIB_04569_01_S5",
+        "LIB_04570_01_S6",
+        "LIB_04571_01_S7",
+        "LIB_04572_01_S8",
+        "LIB_04573_01_S9",
+        "LIB_04574_01_S10",
+        "LIB_04575_01_S11",
+        "LIB_04576_01_S12",
+        "LIB_04577_01_S13",
+        "LIB_04578_01_S14"
+    ],
+    "out_to": "/gs1/home/routsongrm/git/OpenOmics/weave/.tests/dry_run_out/paired_end",
+    "demux_input_dir": "/gs1/home/routsongrm/git/OpenOmics/weave/.tests/paired_end",
+    "bclconvert": false,
+    "demux_data": false,
+    "resources": {
+        "sif": "/gs1/RTS/OpenOmics/SIFs/",
+        "mounts": {
+            "kaiju": {
+                "to": "/opt/kaiju",
+                "from": "/gs1/RTS/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10",
+                "mode": "ro"
+            },
+            "kraken2": {
+                "to": "/opt/kraken2",
+                "from": "/gs1/RTS/OpenOmics/references/Dmux/kraken2/k2_pluspfp_20230605",
+                "mode": "ro"
+            },
+            "fastq_screen": {
+                "to": "/fdb/fastq_screen/FastQ_Screen_Genomes",
+                "from": "/gs1/RTS/OpenOmics/references/Dmux/FastQ_Screen_Genomes",
+                "mode": "ro"
+            }
+        }
+    },
+    "runqc": true,
+    "cluster-cancel": "scancel",
+    "restart-times": 3,
+    "jobscript": "slurm-jobscript.sh",
+    "cluster": "slurm-submit.py",
+    "cluster-status": "slurm-status.py",
+    "max-jobs-per-second": 10,
+    "max-status-checks-per-second": 10,
+    "local-cores": 1,
+    "latency-wait": 120,
+    "use-conda": false,
+    "use-singularity": true,
+    "jobs": 20,
+    "printshellcmds": true
+}
