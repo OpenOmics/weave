@@ -29,11 +29,11 @@ def get_all_seq_dirs(top_dir, server):
 
 
 def check_if_demuxed(data_dir):
-    is_demuxed = False
+    do_demuxed = True
     if Path(data_dir, 'Analysis').exists():
         if list(Path(data_dir, 'Analysis').rglob('*.fastq*')):
-            is_demuxed = True
-    return is_demuxed
+            do_demuxed = False
+    return do_demuxed
 
 
 def valid_run_output(output_directory, dry_run=False):
@@ -59,7 +59,11 @@ def runid2samplesheet(runid, top_dir=DIRECTORY_CONFIGS['bigsky']['seq']):
     ss_path = Path(top_dir, runid)
     if not ss_path.exists():
         raise FileNotFoundError(f"Run directory does not exist: {ss_path}")
-    if Path(ss_path, f"SampleSheet_{runid}.txt").exists():
+    if Path(ss_path, f"SampleSheet.txt").exists():
+        ss_path = Path(ss_path, f"SampleSheet.txt")
+    elif Path(ss_path, f"SampleSheet.csv").exists():
+        ss_path = Path(ss_path, f"SampleSheet.csv")
+    elif Path(ss_path, f"SampleSheet_{runid}.txt").exists():
         ss_path = Path(ss_path, f"SampleSheet_{runid}.txt")
     elif Path(ss_path, f"SampleSheet_{runid}.csv").exists():
         ss_path = Path(ss_path, f"SampleSheet_{runid}.csv")
@@ -149,7 +153,7 @@ def get_run_directories(runids, seq_dir=None, sheetname=None):
         this_run_info = dict(run_id=rid)
 
         if Path(run_p, 'SampleSheet.csv').exists():
-            sheet = parse_samplesheet(Path(run_p, 'SampleSheet.csv').absolute())
+            sheet = Path(run_p, 'SampleSheet.csv').absolute()
         elif Path(run_p, f'SampleSheet_{rid}.csv').exists():
             sheet = Path(run_p, f'SampleSheet_{rid}.csv').absolute()
         elif Path(run_p, f'SampleSheet_{rid}.csv').exists():

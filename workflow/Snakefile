@@ -28,59 +28,53 @@ qa_qc_outputs = flatten(
     [
         # ~~ fastqc on untrimmed reads ~~
         expand(
-            "{out_dir}/{rid}/{project}/{sids}/fastqc_untrimmed/{sids}_R{rnum}_001_fastqc.zip",
+            "{out_dir}/{project}/{sids}/fastqc_untrimmed/{sids}_R{rnum}_001_fastqc.zip",
             out_dir=config["out_to"],
             project=config["project"],
-            rid=config["run_ids"],
             sids=config["sids"],
             rnum=config["rnums"],
         ),
         # ~~ fastqc on trimmed reads ~~
         expand(
-            "{out_dir}/{rid}/{project}/{sids}/fastqc_trimmed/{sids}_trimmed_R{rnum}_fastqc.zip",
+            "{out_dir}/{project}/{sids}/fastqc_trimmed/{sids}_trimmed_R{rnum}_fastqc.zip",
             out_dir=config["out_to"],
             sids=config["sids"],
             project=config["project"],
-            rid=config["run_ids"],
             rnum=config["rnums"],
         ),
         # ~~ fastp trimming metrics ~~
         expand(
-            "{out_dir}/{rid}/{project}/{sids}/fastp/{sids}_trimmed_R{rnum}.fastq.gz",
+            "{out_dir}/{project}/{sids}/fastp/{sids}_trimmed_R{rnum}.fastq.gz",
             out_dir=config["out_to"],
             sids=config["sids"],
             project=config["project"],
-            rid=config["run_ids"],
             rnum=config["rnums"],
         ),
         # ~~ fastq screen ~~
         expand(
-            "{out_dir}/{rid}/{project}/{sids}/fastq_screen/{sids}_trimmed_R{rnum}_screen.html",
+            "{out_dir}/{project}/{sids}/fastq_screen/{sids}_trimmed_R{rnum}_screen.html",
             out_dir=config["out_to"],
             sids=config["sids"],
             rnum=config["rnums"],
-            rid=config["run_ids"],
             project=config["project"],
         ),
         # kraken2
         expand(
-            "{out_dir}/{rid}/{project}/{sids}/kraken/{sids}.tsv",
+            "{out_dir}/{project}/{sids}/kraken/{sids}.tsv",
             out_dir=config["out_to"],
             sids=config["sids"],
             project=config["project"],
-            rid=config["run_ids"],
         ),
         # kaiju
         expand(
-            "{out_dir}/{rid}/{project}/{sids}/kaiju/{sids}.tsv",
+            "{out_dir}/{project}/{sids}/kaiju/{sids}.tsv",
             out_dir=config["out_to"],
             sids=config["sids"],
             project=config["project"],
-            rid=config["run_ids"],
         ),
         # multiqc
         expand(
-            "{out_dir}/{rid}/{project}/multiqc/Run-{rid}-Project-{project}_multiqc_report.html",
+            "{out_dir}/{project}/multiqc/Run-{rid}-Project-{project}_multiqc_report.html",
             out_dir=config["out_to"],
             project=config["project"],
             rid=config["run_ids"],
@@ -116,7 +110,7 @@ dragen_linker_outputs = flatten(
     ]
 )
 
-if not config['demux_data']:
+if config['demux_data']:
     if config['bclconvert']:
         all_outputs = bclconvert_outputs
     else:

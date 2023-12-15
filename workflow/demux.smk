@@ -32,9 +32,10 @@ rule bcl2fastq:
     params:
         out_dir                = config["out_to"] + "/demux",
     container: config["resources"]["sif"] + "bcl2fastq.sif",
+    log: config["out_to"] + "/logs/bcl2fastq/" + config["run_ids"] + "_" + config["project"] + ".log",
     threads: 26
     resources: 
-        mem_mb = "32g",
+        mem_mb = "32G",
         slurm_partition = "quick",
         runtime = 60*4,
         tasks = 1,
@@ -49,7 +50,6 @@ rule bcl2fastq:
             --fastq-compression-level 9 \
             --no-lane-splitting \
             -o {params.out_dir}
-            find . > .fqlist
             touch {output.breadcrumb}
         """
 
@@ -81,7 +81,7 @@ rule bclconvert:
     input:
         run_dir                = config['demux_input_dir'],
         binary_base_calls      = expand("{files}", files=config['bcl_files'] if config['bclconvert'] else demux_noop_args),
-        samplesheets           = expand("{run}/SampleSheet.csv", run=config['demux_input_dir'] if config['bclconvert'] else demux_noop_args),
+        samplesheet            = expand("{ss}", ss=config['sample_sheet'] if config['bclconvert'] else demux_noop_args),
         runinfo                = expand("{run}/RunInfo.xml", run=config['demux_input_dir'] if config['bclconvert'] else demux_noop_args),
     params:
         out_dir                = config["out_to"] + "/demux/",
@@ -95,7 +95,6 @@ rule bclconvert:
         top_unknown            = expand("{out_to}/demux/Reports/Top_Unknown_Barcodes.csv", **demux_expand_args if config['bclconvert'] else demux_noop_args),
         breadcrumb             = expand("{out_to}/demux/.BC_DEMUX_COMPLETE", **demux_expand_args if config['bclconvert'] else demux_noop_args),
     container: config["resources"]["sif"] + "weave_bclconvert_0.0.3.sif",
-    log: config["out_to"] + "/logs/bclconvert/" + config["run_ids"] + "_" + config["project"] + ".log",
     threads: 75
     resources: mem_mb = int(64e3)
     shell:
@@ -104,6 +103,7 @@ rule bclconvert:
         --bcl-input-directory {input.run_dir} \
         --force \
         --output-directory {params.out_dir} \
+        --sample-sheet {input.samplesheet} \
         --fastq-gzip-compression-level 9 \
         --bcl-sampleproject-subdirectories true \
         --bcl-num-conversion-threads 24 \
@@ -117,18 +117,18 @@ rule bclconvert:
 
 rule fastq_linker_from_dragen:
     input:
-        read1                  = expand(config["demux_input_dir"] + "/Analysis/1/Data/fastq/{full_sid}_R1_001.fastq.gz", full_sid=config["sids"]),
-        read2                  = expand(config["demux_input_dir"] + "/Analysis/1/Data/fastq/{full_sid}_R2_001.fastq.gz", full_sid=config["sids"]),
-        adapter_metrics        = config["demux_input_dir"] + "/Analysis/1/Data/Reports/Adapter_Metrics.csv",
-        qual_metrics           = config["demux_input_dir"] + "/Analysis/1/Data/Reports/Quality_Metrics.csv",
-        demux_stats            = config["demux_input_dir"] + "/Analysis/1/Data/Reports/Demultiplex_Stats.csv",
+        read1                  = expand(config["demux_input_dir"] + "/Analysis/1/Data/fastq/{full_sid}_R1_001.fastq.gz", full_sid=config["sids"]) if not config['demux_data'] else [],
+        read2                  = expand(config["demux_input_dir"] + "/Analysis/1/Data/fastq/{full_sid}_R2_001.fastq.gz", full_sid=config["sids"]) if not config['demux_data'] else [],
+        adapter_metrics        = config["demux_input_dir"] + "/Analysis/1/Data/Reports/Adapter_Metrics.csv" if not config['demux_data'] else [],
+        qual_metrics           = config["demux_input_dir"] + "/Analysis/1/Data/Reports/Quality_Metrics.csv" if not config['demux_data'] else [],
+        demux_stats            = config["demux_input_dir"] + "/Analysis/1/Data/Reports/Demultiplex_Stats.csv" if not config['demux_data'] else [],
     output:
-        out_read1              = expand(config["out_to"] + "/demux/" + config["project"] + "/{full_sid}_R1_dragen.fastq.gz", full_sid=config["sids"]),
-        out_read2              = expand(config["out_to"] + "/demux/" + config["project"] + "/{full_sid}_R2_dragen.fastq.gz", full_sid=config["sids"]),
-        breadcrumb             = expand(config["out_to"] + "/demux/.breadcrumb/{full_sid}", full_sid=config["sids"]),
-        adapter_metrics_out    = config["out_to"] + "/demux/dragen_reports/Adapter_Metrics.csv",
-        qual_metrics_out       = config["out_to"] + "/demux/dragen_reports/Quality_Metrics.csv",
-        demux_stats_out        = config["out_to"] + "/demux/dragen_reports/Demultiplex_Stats.csv",
+        out_read1              = expand(config["out_to"] + "/demux/" + config["project"] + "/{full_sid}_R1_dragen.fastq.gz", full_sid=config["sids"]) if not config['demux_data'] else [],
+        out_read2              = expand(config["out_to"] + "/demux/" + config["project"] + "/{full_sid}_R2_dragen.fastq.gz", full_sid=config["sids"]) if not config['demux_data'] else [],
+        breadcrumb             = expand(config["out_to"] + "/demux/.breadcrumb/{full_sid}", full_sid=config["sids"]) if not config['demux_data'] else [],
+        adapter_metrics_out    = config["out_to"] + "/demux/dragen_reports/Adapter_Metrics.csv" if not config['demux_data'] else [],
+        qual_metrics_out       = config["out_to"] + "/demux/dragen_reports/Quality_Metrics.csv" if not config['demux_data'] else [],
+        demux_stats_out        = config["out_to"] + "/demux/dragen_reports/Demultiplex_Stats.csv" if not config['demux_data'] else [],
     run:
         demux_dir = Path(config["out_to"], 'demux').resolve()
         bc_dir = Path(demux_dir, '.breadcrumb').resolve()
