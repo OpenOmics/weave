@@ -44,7 +44,7 @@ The **`./weave`** pipeline is composed of two sub commands to setup and run the 
 
 </section>
 
-**weave** is a two-pronged pipeline; the first prong detects and uses the appropriate illumnia software to demultiplex the ensemble collection of reads into their individual samples and converts the sequencing information into the FASTQ file format. From there out the second prong is a distrubted parallele step that uses a variety of commonly accepting nextgen sequencing tools to report, visualize, and calculate the quality of the reads after sequencing. **weave** makes uses of the ubiquitous containerization software (singularity)[https://sylabs.io/]<sup>2</sup> for modularity, and the robust pipelining DSL [Snakemake](https://snakemake.github.io/)<sup>3</sup>
+**weave** is a two-pronged pipeline; the first prong detects and uses the appropriate illumnia software to demultiplex the ensemble collection of reads into their individual samples and converts the sequencing information into the FASTQ file format. From there out the second prong is a distrubted parallele step that uses a variety of commonly accepting nextgen sequencing tools to report, visualize, and calculate the quality of the reads after sequencing. **weave** makes uses of the ubiquitous containerization software <a href="https://sylabs.io">singularity</a><sup>2</sup> for modularity, and the robust pipelining DSL [Snakemake](https://snakemake.github.io/)<sup>3</sup>
 
 **weave** common use is to gauge the qualtiy of reads for potential downstream analysis. Since bioinformatic analysis requires robust and accurate data to draw scientific conclusions, this helps save time and resources when it comes to analyzing the volumous amount of sequencing data that is collected routinely.
 
@@ -77,10 +77,10 @@ If you use this software, please cite it as below:
     ```
 
 ## References
-<sup>**1.**  (Philip Ewels, Måns Magnusson, Sverker Lundin, Max Käller, MultiQC: summarize analysis results for multiple tools and samples in a single report, Bioinformatics, Volume 32, Issue 19, October 2016, Pages 3047–3048.)[https://doi.org/10.1093/bioinformatics/btw354]</sup>
-<sup>**2.**  Kurtzer GM, Sochat V, Bauer MW (2017). Singularity: Scientific containers for mobility of compute. PLoS ONE 12(5): e0177459.</sup>  
-<sup>**3.**  Koster, J. and S. Rahmann (2018). "Snakemake-a scalable bioinformatics workflow engine." Bioinformatics 34(20): 3600.</sup>
-<sup>**4.**  [Menzel P., Ng K.L., Krogh A. (2016) Fast and sensitive taxonomic classification for metagenomics with Kaiju. Nat. Commun. 7:11257](http://www.nature.com/ncomms/2016/160413/ncomms11257/full/ncomms11257.html)</sup>
-<sup>**5.**  [Wingett SW and Andrews S. FastQ Screen: A tool for multi-genome mapping and quality control [version 2; referees: 4 approved]. F1000Research 2018, 7:1338](https://doi.org/10.12688/f1000research.15931.2)</sup>
-<sup>**6.**  [Shifu Chen, Yanqing Zhou, Yaru Chen, Jia Gu; fastp: an ultra-fast all-in-one FASTQ preprocessor, Bioinformatics, Volume 34, Issue 17, 1 September 2018, Pages i884–i890.](https://doi.org/10.1093/bioinformatics/bty560)</sup>
-<sup>**7.**  [Wood, D.E., Lu, J. & Langmead, B. Improved metagenomic analysis with Kraken 2. Genome Biol 20, 257 (2019).](https://doi.org/10.1186/s13059-019-1891-0)</sup>
+<sup>**1.**  <a href="https://doi.org/10.1093/bioinformatics/btw354">Philip Ewels, Måns Magnusson, Sverker Lundin, Max Käller, MultiQC: summarize analysis results for multiple tools and samples in a single report, Bioinformatics, Volume 32, Issue 19, October 2016, Pages 3047–3048.</a></sup>  
+<sup>**2.**  [Kurtzer GM, Sochat V, Bauer MW (2017). Singularity: Scientific containers for mobility of compute. PLoS ONE 12(5): e0177459.](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0177459)</sup>  
+<sup>**3.**  [Koster, J. and S. Rahmann (2018). "Snakemake-a scalable bioinformatics workflow engine." Bioinformatics 34(20): 3600.](https://academic.oup.com/bioinformatics/article/28/19/2520/290322)</sup>  
+<sup>**4.**  [Menzel P., Ng K.L., Krogh A. (2016) Fast and sensitive taxonomic classification for metagenomics with Kaiju. Nat. Commun. 7:11257](http://www.nature.com/ncomms/2016/160413/ncomms11257/full/ncomms11257.html)</sup>  
+<sup>**5.**  [Wingett SW and Andrews S. FastQ Screen: A tool for multi-genome mapping and quality control [version 2; referees: 4 approved]. F1000Research 2018, 7:1338](https://doi.org/10.12688/f1000research.15931.2)</sup>  
+<sup>**6.**  [Shifu Chen, Yanqing Zhou, Yaru Chen, Jia Gu; fastp: an ultra-fast all-in-one FASTQ preprocessor, Bioinformatics, Volume 34, Issue 17, 1 September 2018, Pages i884–i890.](https://doi.org/10.1093/bioinformatics/bty560)</sup>  
+<sup>**7.**  [Wood, D.E., Lu, J. & Langmead, B. Improved metagenomic analysis with Kraken 2. Genome Biol 20, 257 (2019).](https://doi.org/10.1186/s13059-019-1891-0)</sup>  

@@ -8,10 +8,7 @@ def flatten(this_list):
     return [i[x] for i in this_list for x in range(len(i))]
 
 
-envvars:
-    "SNK_CONFIG",
-
-
+envvars: "SNK_CONFIG",
 configfile: os.environ["SNK_CONFIG"]
 
 
@@ -21,7 +18,7 @@ demux_expand_args = {
     "out_to": config["out_to"],
     "rid": config["run_ids"],
     "rnums": config["rnums"],
-    "sample_num": [
+    "snums": [
         str(x) for x in range(1, len(config['sids'])+1)
     ],
 }
@@ -92,15 +89,40 @@ qa_qc_outputs = flatten(
 )
 
 
-all_outputs = flatten(
+bcl2fastq_outputs = flatten(
     [
-        # ~~ illumnia demultiplexing ~~
-        expand("{out_to}/demux/{rid}/{project}/{sids}_R{rnums}_001.fastq.gz", **demux_expand_args),
+        # ~~ All other Illumnia demultiplexing ~~
+        expand("{out_to}/demux/{project}/{sids}_R{rnums}_001.fastq.gz", **demux_expand_args),
         expand("{out_to}/demux/Stats/Stats.json", **demux_expand_args),
-        expand("{out_to}/demux/.DEMUX_COMPLETE", **demux_expand_args),
+        expand("{out_to}/demux/.B2F_DEMUX_COMPLETE", **demux_expand_args),
     ]
 )
 
+bclconvert_outputs = flatten(
+    [
+        # ~~ NextSeq2k demultiplexing ~~
+        expand("{out_to}/demux/{project}/{sids}_R{rnums}_001.fastq.gz", **demux_expand_args),
+        expand("{out_to}/demux/Reports/Demultiplex_Stats.csv", **demux_expand_args),
+        expand("{out_to}/demux/Reports/Adapter_Metrics.csv", **demux_expand_args),
+        expand("{out_to}/demux/.BC_DEMUX_COMPLETE", **demux_expand_args),
+    ]
+)
+
+dragen_linker_outputs = flatten(
+    [
+        # ~~ NextSeq2k pre-demultiplexed data ~~
+        expand("{out_to}/demux/.breadcrumb/{sids}", **demux_expand_args),
+        expand("{out_to}/demux/{project}/{sids}_R{rnums}_dragen.fastq.gz", **demux_expand_args),
+    ]
+)
+
+if not config['demux_data']:
+    if config['bclconvert']:
+        all_outputs = bclconvert_outputs
+    else:
+        all_outputs = bcl2fastq_outputs
+else:
+    all_outputs = dragen_linker_outputs
 
 if config["runqc"]:
     all_outputs.extend(qa_qc_outputs)

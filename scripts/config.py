@@ -93,7 +93,8 @@ def get_resource_config():
 
 def base_config(keys=None, qc=True):
     base_keys = ('runs', 'run_ids', 'project', 'rnums', 'bcl_files', \
-                'sample_sheet', 'samples', 'sids', 'out_to', 'demux_input_dir')
+                'sample_sheet', 'samples', 'sids', 'out_to', 'demux_input_dir', \
+                'bclconvert', 'demux_data')
     this_config = {k: [] for k in base_keys}
     this_config['resources'] = get_resource_config()
     this_config['runqc'] = qc
@@ -148,10 +149,12 @@ def get_bigsky_seq_dirs():
 
 DIRECTORY_CONFIGS = {
     "bigsky": {
+        "seqroot": "/gs1/RTS/NextGen/SequencerRuns/",
         "seq": get_bigsky_seq_dirs(),
         "profile": Path(Path(__file__).parent.parent, "utils", "profiles", "bigsky").resolve(),
     },
     "biowulf": {
+        "seqroot": "/data/RTB_GRS/SequencerRuns/",
         "seq": get_biowulf_seq_dirs(),
         "profile": Path(Path(__file__).parent.parent, "utils", "profiles", "biowulf").resolve(),
     }

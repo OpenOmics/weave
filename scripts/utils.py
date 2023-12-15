@@ -69,7 +69,7 @@ def valid_runid(id_to_check):
 
 
 def valid_run_input(run):
-    regex_run_id = r"(\d{6})_([A-Z]{2}\d{6})_(\d{4})_([A-Z0-9]{10})"
+    regex_run_id = r"(\d{6})_([A-Z]{2}\d{5,6})(_\d{1,4})?_([A-Z0-9]{9,10})"
     match_id = re.search(regex_run_id, run, re.MULTILINE)
     if match_id:
         return run
@@ -123,12 +123,14 @@ def exec_snakemake(popen_cmd, local=False, dry_run=False, env=None, cwd=None):
 
 
 def mk_sbatch_script(wd, cmd):
+    if not Path(wd, 'logs', 'masterjob').exists():
+        Path(wd, 'logs', 'masterjob').mkdir(mode=0o755, parents=True)
     master_job_script = \
-    """
+    f"""
     #!/bin/bash
     #SBATCH --job-name=weave_masterjob
-    #SBATCH --output=./slurm/%x_%j.out
-    #SBATCH --error=./slurm/%x_%j.err
+    #SBATCH --output={wd}/logs/masterjob/%x_%j.out
+    #SBATCH --error={wd}/logs/masterjob/%x_%j.err
     #SBATCH --ntasks=1
     #SBATCH --cpus-per-task=2
     #SBATCH --time=02-00:00:00
@@ -138,7 +140,7 @@ def mk_sbatch_script(wd, cmd):
     master_job_script += get_mods(init=True) + "\n"
     master_job_script += cmd
     master_job_script = '\n'.join([x.lstrip() for x in master_job_script.split('\n')])
-    master_script_location = Path(wd, 'slurm', 'master_jobscript.sh').absolute()
+    master_script_location = Path(wd, 'logs', 'masterjob', 'master_jobscript.sh').absolute()
     master_script_location.parent.mkdir(mode=0o755, parents=True, exist_ok=True)
     with open(master_script_location, 'w') as fo:
         fo.write(master_job_script)
@@ -174,6 +176,8 @@ def get_mounts(*extras):
 
     if extras:
         for extra in extras:
+            if ':' in str(extra):
+                extra = str(extra).split(':')[0]
             if not Path(extra).exists():
                 raise FileNotFoundError(f"Can't mount {str(extra)}, it doesn't exist!")
         mount_binds.extend(extras)
@@ -200,17 +204,6 @@ def get_mounts(*extras):
     return "\'-B " + ','.join(mounts) + "\'"
 
 
-def ensure_pe_adapters(samplesheets):
-    pe = []
-    for ss in samplesheets:
-        this_is_pe = [ss.is_paired_end]
-        for this_sample in ss.samples:
-            this_is_pe.append(str(this_sample.index) not in ('', None, 'nan'))
-            this_is_pe.append(str(this_sample.index2) not in ('', None, 'nan'))
-        pe.extend(this_is_pe)
-    return all(pe)
-
-
 def exec_pipeline(configs, dry_run=False, local=False):
     """
         Execute the BCL->FASTQ pipeline.
@@ -233,20 +226,26 @@ def exec_pipeline(configs, dry_run=False, local=False):
     for i in range(0, len(configs['run_ids'])):
         this_config = {k: (v[i] if k not in skip_config_keys else v) for k, v in configs.items() if v}
         this_config.update(profile_config)
+
         extra_to_mount = [this_config['out_to'], this_config['demux_input_dir']]
+        if this_config['bclconvert']:
+            bclcon_log_dir = Path(this_config['out_to'], "logs", "bclconvert_demux")
+            if not bclcon_log_dir.exists():
+                bclcon_log_dir.mkdir(mode=0o755, parents=True)
+            extra_to_mount.append(str(bclcon_log_dir) + ":" + "/var/log/bcl-convert:rw")
         singularity_binds = get_mounts(*extra_to_mount)
         config_file = Path(this_config['out_to'], '.config', f'config_job_{str(i)}.json').absolute()
         json.dump(this_config, open(config_file, 'w'), cls=PathJSONEncoder, indent=4)
         top_env = {}
         top_env['PATH'] = os.environ["PATH"]
         top_env['SNK_CONFIG'] = str(config_file.absolute())
-        # top_env['LOAD_MODULES'] = get_mods()
         top_env['SINGULARITY_CACHEDIR'] = str(Path(this_config['out_to'], '.singularity').absolute())
         this_cmd = [
             "snakemake",
             "-pr",
             "--use-singularity",
             "--rerun-incomplete",
+            "--keep-incomplete",
             "--rerun-triggers", "mtime",
             "--verbose",
             "-s", snake_file,
@@ -269,3 +268,11 @@ def exec_pipeline(configs, dry_run=False, local=False):
         print(' '.join(map(str, this_cmd)))
         exec_snakemake(this_cmd, local=local, dry_run=dry_run, env=top_env, cwd=str(Path(this_config['out_to']).absolute()))
 
+
+def is_bclconvert(samplesheet):
+    BCLCONVERT_INSTRUMENTS = ('VH01716',)
+    BCLCONVERT_PLATFORMS = ('NextSeq1k2k',)
+    check = False
+    if samplesheet.instrument in BCLCONVERT_INSTRUMENTS or samplesheet.platform in BCLCONVERT_PLATFORMS:
+        check = True
+    return check

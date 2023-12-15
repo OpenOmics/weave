@@ -2,3 +2,5 @@ logs
 .tests/illumnia_demux/dry_run_out
 .snakemake
 site
+output
+.tests/dry_run_out/*
