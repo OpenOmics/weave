@@ -28,7 +28,7 @@ The **`./weave`** pipeline is composed of two sub commands to setup and run the 
 **weave** common use is to gauge the qualtiy of reads for potential downstream analysis. Since bioinformatic analysis requires robust and accurate data to draw scientific conclusions, this helps save time and resources when it comes to analyzing the volumous amount of sequencing data that is collected routinely.
 
 Several of the applications that **weave** uses to visualize and report quality metrics are:
-- [Kraken](https://github.com/DerrickWood/kraken2)<sup>71</sup>, kmer analysis
+- [Kraken](https://github.com/DerrickWood/kraken2)<sup>7</sup>, kmer analysis
 - [Kaiju](https://bioinformatics-centre.github.io/kaiju/)<sup>4</sup>, kmer analysis
 - [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/), fastq statistics
 - [fastp](https://github.com/OpenGene/fastp)<sup>6</sup>, fastq adapter removal (trimming)

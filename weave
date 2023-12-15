@@ -25,25 +25,21 @@ def run(args):
                                       "Please file issue if this message is blocking: https://github.com/OpenOmics/weave/issues")
         pairs = ['1', '2'] if sample_sheet.is_paired_end else ['1']
          
+        # ~~~ demultiplexing configuration ~~~
+        bcls = [x for x in Path(rundir).rglob('*.bcl.*') if not 'tmp' in str(x)]
+        if not bcls:
+            bcls = [x for x in Path(rundir).rglob('*.cbcl') if not 'tmp' in str(x)]
+        exec_config['sample_sheet'].append(str(sample_sheet.path))
+        exec_config['bcl_files'].append(bcls)
+        exec_config['demux_data'].append(files.check_if_demuxed(rundir))
 
-        # ~~~ general run configuration ~~~
+        # ~~~ QC/QA configuration ~~~
         exec_config['bclconvert'].append(utils.is_bclconvert(sample_sheet))
         exec_config['run_ids'].append(rundir.name)
         exec_config['demux_input_dir'].append(rundir.absolute())
         exec_config['sids'].append([x['sid'] for x in sample_list])
         exec_config['project'].append(project_list[0])
         exec_config['rnums'].append(pairs)
-
-        # ~~~ demultiplexing configuration ~~~
-        bcls = [x for x in Path(rundir).rglob('*.bcl.*') if not 'tmp' in str(x)]
-        if not bcls:
-            bcls = [x for x in Path(rundir).rglob('*.cbcl') if not 'tmp' in str(x)]
-        exec_config['bcl_files'].append(bcls)
-        exec_config['demux_data'].append(files.check_if_demuxed(rundir))
-
-        # ~~~ QC/QA configuration ~~~
-        sample_sheet = run_infos['samplesheet']
-        exec_config['sample_sheet'].append(str(sample_sheet.path.absolute()))
         exec_config['samples'].append(sample_list)
         
         # ~~~ output verification ~~~
@@ -85,7 +81,7 @@ if __name__ == '__main__':
     parser_run.add_argument('-d', '--dry-run', action='store_true',
                             help='Dry run the demultiplexing workflow')
     parser_run.add_argument('-n', '--noqc', action='store_false',
-                            help='Dry run the demultiplexing workflow')
+                            help='Do not run the QC/QA portion of the workflow (Default is on)')
     parser_run.add_argument('--sheetname', metavar='Sample Sheet Filename', 
                             help='Name of the sample sheet file to look for (default is SampleSheet.csv)')
     parser_run.add_argument('-l', '--local', action='store_true',
