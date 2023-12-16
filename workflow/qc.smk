@@ -19,8 +19,8 @@ rule fastqc_untrimmed:
     input:
         samples     = config['out_to'] + "/demux/" + config["project"] + "/{sids}_R{rnums}_" + trim_input_suffix + ".fastq.gz",
     output:   
-        html        = config['out_to'] + "/" + config["project"] + "/{sids}/fastqc_untrimmed/{sids}_R{rnums}_001_fastqc.html",
-        fqreport    = config['out_to'] + "/" + config["project"] + "/{sids}/fastqc_untrimmed/{sids}_R{rnums}_001_fastqc.zip",
+        html        = config['out_to'] + "/" + config["project"] + "/{sids}/fastqc_untrimmed/{sids}_R{rnums}_" + trim_input_suffix + "_fastqc.html",
+        fqreport    = config['out_to'] + "/" + config["project"] + "/{sids}/fastqc_untrimmed/{sids}_R{rnums}_" + trim_input_suffix + "_fastqc.zip",
     params:
         output_dir  = lambda w: config['out_to'] + "/" + config["project"] + "/" + w.sids + "/fastqc_untrimmed/"
     log: config['out_to'] + "/logs/" + "/" + config["project"] + "/fastqc_untrimmed/{sids}_R{rnums}.log"
@@ -58,7 +58,7 @@ rule multiqc_report:
         # demux status
         demux_stats,
         # fastqc on untrimmed reads
-        expand(config['out_to'] + "/" + config["project"] + "/{sids}/fastqc_untrimmed/{sids}_R{rnums}_001_fastqc.zip", **qc_expand_args),
+        expand(config['out_to'] + "/" + config["project"] + "/{sids}/fastqc_untrimmed/{sids}_R{rnums}_" + trim_input_suffix + "_fastqc.zip", **qc_expand_args),
         # fastqc on trimmed reads
         expand(config['out_to'] + "/" + config["project"] + "/{sids}/fastqc_trimmed/{sids}_trimmed_R{rnums}_fastqc.zip", **qc_expand_args),
         # fastp trimming metrics
