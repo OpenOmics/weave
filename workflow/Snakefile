@@ -24,11 +24,17 @@ demux_expand_args = {
 }
 
 
+if not config['demux_data']:
+    trim_input_suffix = 'dragen'
+else:
+    trim_input_suffix = '001'
+
+
 qa_qc_outputs = flatten(
     [
         # ~~ fastqc on untrimmed reads ~~
         expand(
-            "{out_dir}/{project}/{sids}/fastqc_untrimmed/{sids}_R{rnum}_001_fastqc.zip",
+            "{out_dir}/{project}/{sids}/fastqc_untrimmed/{sids}_R{rnum}_" + trim_input_suffix + "_fastqc.zip",
             out_dir=config["out_to"],
             project=config["project"],
             sids=config["sids"],
@@ -107,6 +113,7 @@ dragen_linker_outputs = flatten(
         # ~~ NextSeq2k pre-demultiplexed data ~~
         expand("{out_to}/demux/.breadcrumb/{sids}", **demux_expand_args),
         expand("{out_to}/demux/{project}/{sids}_R{rnums}_dragen.fastq.gz", **demux_expand_args),
+        [config["out_to"] + "/demux/dragen_reports/Demultiplex_Stats.csv"],
     ]
 )
 
