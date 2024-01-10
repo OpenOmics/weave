@@ -17,12 +17,12 @@ else:
 
 rule fastqc_untrimmed:
     input:
-        samples     = config['out_to'] + "/demux/" + config["project"] + "/{sids}_R{rnums}_" + trim_input_suffix + ".fastq.gz",
+        samples       = config['out_to'] + "/demux/" + config["project"] + "/{sids}_R{rnums}_" + trim_input_suffix + ".fastq.gz",
     output:   
-        html        = config['out_to'] + "/" + config["project"] + "/{sids}/fastqc_untrimmed/{sids}_R{rnums}_" + trim_input_suffix + "_fastqc.html",
-        fqreport    = config['out_to'] + "/" + config["project"] + "/{sids}/fastqc_untrimmed/{sids}_R{rnums}_" + trim_input_suffix + "_fastqc.zip",
+        html          = config['out_to'] + "/" + config["project"] + "/{sids}/fastqc_untrimmed/{sids}_R{rnums}_" + trim_input_suffix + "_fastqc.html",
+        fqreport      = config['out_to'] + "/" + config["project"] + "/{sids}/fastqc_untrimmed/{sids}_R{rnums}_" + trim_input_suffix + "_fastqc.zip",
     params:
-        output_dir  = lambda w: config['out_to'] + "/" + config["project"] + "/" + w.sids + "/fastqc_untrimmed/"
+        output_dir    = lambda w: config['out_to'] + "/" + config["project"] + "/" + w.sids + "/fastqc_untrimmed/"
     log: config['out_to'] + "/logs/" + "/" + config["project"] + "/fastqc_untrimmed/{sids}_R{rnums}.log"
     threads: 4
     containerized: config["resources"]["sif"] + "weave_ngsqc_0.0.1.sif"
@@ -36,12 +36,12 @@ rule fastqc_untrimmed:
 
 rule fastqc_trimmed:
     input:
-        in_read     = config["out_to"] + "/" + config["project"] + "/{sids}/fastp/{sids}_trimmed_R{rnums}.fastq.gz",
+        in_read       = config["out_to"] + "/" + config["project"] + "/{sids}/fastp/{sids}_trimmed_R{rnums}.fastq.gz",
     output:
-        html        = config['out_to'] + "/" + config["project"] + "/{sids}/fastqc_trimmed/{sids}_trimmed_R{rnums}_fastqc.html",
-        fqreport    = config['out_to'] + "/" + config["project"] + "/{sids}/fastqc_trimmed/{sids}_trimmed_R{rnums}_fastqc.zip",
+        html          = config['out_to'] + "/" + config["project"] + "/{sids}/fastqc_trimmed/{sids}_trimmed_R{rnums}_fastqc.html",
+        fqreport      = config['out_to'] + "/" + config["project"] + "/{sids}/fastqc_trimmed/{sids}_trimmed_R{rnums}_fastqc.zip",
     params:
-        output_dir  = lambda w: config['out_to'] + "/" + config["project"] + "/" + w.sids + "/fastqc_trimmed/"
+        output_dir    = lambda w: config['out_to'] + "/" + config["project"] + "/" + w.sids + "/fastqc_trimmed/"
     containerized: config["resources"]["sif"] + "weave_ngsqc_0.0.1.sif"
     threads: 4
     resources: mem_mb = 8096
@@ -51,6 +51,53 @@ rule fastqc_trimmed:
         mkdir -p {params.output_dir}
         fastqc -o {params.output_dir} -t {threads} {input.in_read}
         """
+
+
+rule bwa:
+    input:
+        in_read1       = config["out_to"] + "/" + config["project"] + "/{sids}/fastp/{sids}_trimmed_R1.fastq.gz" if config['disambiguate'] else [],
+        in_read2       = config["out_to"] + "/" + config["project"] + "/{sids}/fastp/{sids}_trimmed_R2.fastq.gz" if config['disambiguate'] and len(config['rnums']) == 2 else [],
+    output:
+        aligntoA       = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/{sids}.AligntoGenomeA.bam"
+        aligntoB       = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/{sids}.AligntoGenomeB.bam"
+    params:
+        host_genome    = config['host_genome']
+        path_genome    = config['pathogen_genome']
+    threads: 32
+    resources: mem_mb = 64768
+    containerized: config["resources"]["sif"] + "weave_ngsqc_0.0.2.sif"
+    log: config['out_to'] + "/logs/" + config["project"] + "/bwa_mem/{sids}.log"
+    shell:
+        """
+        bwa mem -t {threads} {params.host_genome} {input.in_read1} {input.in_read2} | samtools sort -@ {threads} -o {output.aligntoA} -
+        bwa mem -t {threads} {params.path_genome} {input.in_read1} {input.in_read2} | samtools sort -@ {threads} -o {output.aligntoB} -
+        """
+
+
+rule disambiguate:
+    input:
+        aligntoA       = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/{sids}.AligntoGenomeA.bam"
+        aligntoB       = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/{sids}.AligntoGenomeB.bam"
+    output:
+        ambiguousA     = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/{sids}.ambiguousSpeciesA.bam"
+        ambiguousB     = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/{sids}.ambiguousSpeciesB.bam"
+        disambiguousA  = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/{sids}.disambiguatedSpeciesA.bam"
+        disambiguousA  = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/{sids}.disambiguatedSpeciesB.bam"
+        ambiguousA     = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/{sids}_summary.txt"
+    params:
+        host_genome    = config['host_genome']
+        path_genome    = config['pathogen_genome']
+        this_sid       = lambda wc: wc.sids
+        out_dir        = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/"
+    containerized: config["resources"]["sif"] + "ngs_disambiguate_2018.05.03.sif"
+    log: config['out_to'] + "/logs/" + config["project"] + "/disambiguate/{sids}.log"
+    threads: 32
+    resources: mem_mb = 64768
+    shell:
+        """
+        ngs_disambiguate -s {params.this_sid} -o {params.out_dir} -a bwa {input.aligntoA} {input.aligntoB}
+        """
+
 
 
 rule multiqc_report:

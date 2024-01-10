@@ -3,12 +3,12 @@
     "mounts": {
         "kaiju": {
             "to": "/opt/kaiju",
-            "from": "/data/OpenOmics/references/Dmux/kaiju/kaiju_db_nr_euk_2023-05-10",
+            "from": "/data/OpenOmics/references/weave/kaiju/kaiju_db_nr_euk_2023-05-10",
             "mode": "ro"
         },
         "kraken2" : {
             "to": "/opt/kraken2",
-            "from": "/data/OpenOmics/references/Dmux/kraken2/k2_pluspfp_20230605",
+            "from": "/data/OpenOmics/references/weave/kraken2/k2_pluspfp_20230605",
             "mode": "ro"
         }, 
         "fastq_screen" : {

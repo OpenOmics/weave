@@ -128,6 +128,15 @@ else:
 if config["runqc"]:
     all_outputs.extend(qa_qc_outputs)
 
+if config['disambiguate']:
+    all_outputs.extend(flatten([
+        expand("{out_to}/{project}/{sids}/disambiguate/{sids}.ambiguousSpeciesA.bam", **demux_expand_args),
+        expand("{out_to}/{project}/{sids}/disambiguate/{sids}.ambiguousSpeciesB.bam", **demux_expand_args),
+        expand("{out_to}/{project}/{sids}/disambiguate/{sids}.disambiguatedSpeciesA.bam", **demux_expand_args),
+        expand("{out_to}/{project}/{sids}/disambiguate/{sids}.disambiguatedSpeciesB.bam", **demux_expand_args),
+        expand("{out_to}/{project}/{sids}/disambiguate/{sids}_summary.txt", **demux_expand_args),
+    ]))
+
 
 rule all:
     input:

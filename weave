@@ -33,6 +33,17 @@ def run(args):
         exec_config['bcl_files'].append(bcls)
         exec_config['demux_data'].append(files.check_if_demuxed(rundir))
 
+        # ~~~ disambiguate genome configuration ~~~
+        exec_config['host_genome'] = None
+        exec_config['pathogen_genome'] = None
+        if all([args.host, args.pathogen]):
+            utils.valid_host_pathogen_genomes(args.host, args.pathogen)
+            exec_config['disambiguate'] = True
+            exec_config['host_genome'] = config.get_genome_path(args.host)
+            exec_config['pathogen_genome'] = config.get_genome_path(args.pathogen)
+        else:
+            assert(not any([args.host, args.pathogen])), 'Must specify both host and pathogen genometype!'
+
         # ~~~ QC/QA configuration ~~~
         exec_config['bclconvert'].append(utils.is_bclconvert(sample_sheet))
         exec_config['run_ids'].append(rundir.name)
@@ -86,12 +97,13 @@ if __name__ == '__main__':
                             help='Name of the sample sheet file to look for (default is SampleSheet.csv)')
     parser_run.add_argument('-l', '--local', action='store_true',
                             help='Execute pipeline locally without a dispatching executor')
-    # force endedness flags
-    endedness = parser_run.add_mutually_exclusive_group()
-    endedness.add_argument('--single_end', default=None, action='store_true', 
-                            help='Declare endedness of run (in cases in which it is not detectable from sample sheet), mutally exclusive to paired_end')
-    endedness.add_argument('--paired_end', default=None, action='store_true',
-                           help='Declare endedness of run (in cases in which it is not detectable from sample sheet), mutally exclusive to single_end')
+    
+    # disambiguate arguments
+    parser_run.add_argument('-h', '--host', type=files.valid_fasta, default=None,
+                        help='Execute pipeline locally without a dispatching executor.')
+    alias_table = "\n" + utils.get_alias_table() + "\n"
+    parser_run.add_argument('-p', '--pathogen', type=files.valid_fasta, default=None,
+                        help='Execute pipeline locally without a dispatching executor. ' + alias_table)
 
     parser_cache = sub_parsers.add_parser('cache')
     parser_cache.add_argument('cachedir', metavar='<cache directory>', type=cache.valid_dir, 

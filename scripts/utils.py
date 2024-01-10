@@ -15,7 +15,7 @@ from pathlib import Path, PurePath
 
 # ~~~ internals ~~~
 from .files import parse_samplesheet, mk_or_pass_dirs
-from .config import SNAKEFILE, DIRECTORY_CONFIGS, get_current_server, get_resource_config
+from .config import SNAKEFILE, DIRECTORY_CONFIGS, GENOME_CONFIGS, get_current_server, get_resource_config
 
 
 host = get_current_server()
@@ -38,6 +38,19 @@ class PathJSONEncoder(json.JSONEncoder):
         if isinstance(obj, PurePath):
             return str(obj)
         return super(self).default(obj)
+
+
+def get_alias_table():
+    pp_tbl = lambda x: "\n".join([y.lstrip().rstrip() for y in x.split('\n')])
+    return pp_tbl("""+----------------+-------------------------------------------+
+                     | Organism       | Genomes supported (aka)                   |
+                     +----------------+-------------------------------------------+
+                     | HUMAN          | hg19(grch37) / hg38(grch38)               |
+                     +----------------+-------------------------------------------+
+                     | MOUSE          | mm9(grcm37) / mm10(grcm38) / mm39(grcm39) |
+                     +----------------+-------------------------------------------+
+                     | RHESUS MACAQUE | RHEMAC10(mmul10)                          |
+                     +----------------+-------------------------------------------+""")
 
 
 def valid_runid(id_to_check):
@@ -233,6 +246,9 @@ def exec_pipeline(configs, dry_run=False, local=False):
             if not bclcon_log_dir.exists():
                 bclcon_log_dir.mkdir(mode=0o755, parents=True)
             extra_to_mount.append(str(bclcon_log_dir) + ":" + "/var/log/bcl-convert:rw")
+        if this_config['disambiguate']:
+            extra_to_mount.append(Path(this_config['host_genome']).parent)
+            extra_to_mount.append(Path(this_config['pathogen_genome']).parent)
         singularity_binds = get_mounts(*extra_to_mount)
         config_file = Path(this_config['out_to'], '.config', f'config_job_{str(i)}.json').absolute()
         json.dump(this_config, open(config_file, 'w'), cls=PathJSONEncoder, indent=4)
@@ -276,3 +292,30 @@ def is_bclconvert(samplesheet):
     if samplesheet.instrument in BCLCONVERT_INSTRUMENTS or samplesheet.platform in BCLCONVERT_PLATFORMS:
         check = True
     return check
+
+
+def valid_host_pathogen_genomes(host, pathogen):
+    g1, g2 = False, False
+    genomes = GENOME_CONFIGS[get_current_server()]
+
+    if Path(host).absolute().exists():
+        g1 = True
+        host = str(Path(host).absolute())
+    elif host.lower() in genomes:
+        g1 = True
+        host = genomes[host.lower()]
+
+    if Path(g2).absolute().exists():
+        g2 = True
+        pathogen = str(Path(pathogen).absolute())
+    elif pathogen.lower() in genomes:
+        g2 = True
+        pathogen = genomes[pathogen.lower()]
+
+    if not all([g1, g2]):
+        if not g1:
+            raise ValueError('Host genome does not exist on the file system or in the aliases.')
+        if not g2:
+            raise ValueError('Pathogen genome does not exist on the file system or in the aliases.')
+
+    return host, pathogen
