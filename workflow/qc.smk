@@ -55,14 +55,14 @@ rule fastqc_trimmed:
 
 rule bwa:
     input:
-        in_read1       = config["out_to"] + "/" + config["project"] + "/{sids}/fastp/{sids}_trimmed_R1.fastq.gz" if config['disambiguate'] else [],
-        in_read2       = config["out_to"] + "/" + config["project"] + "/{sids}/fastp/{sids}_trimmed_R2.fastq.gz" if config['disambiguate'] and len(config['rnums']) == 2 else [],
+        in_read1       = config["out_to"] + "/" + config["project"] + "/{sids}/fastp/{sids}_trimmed_R1.fastq.gz" if config.get('disambiguate', False) else [],
+        in_read2       = config["out_to"] + "/" + config["project"] + "/{sids}/fastp/{sids}_trimmed_R2.fastq.gz" if config.get('disambiguate', False) and len(config['rnums']) == 2 else [],
     output:
-        aligntoA       = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/{sids}.AligntoGenomeA.bam"
-        aligntoB       = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/{sids}.AligntoGenomeB.bam"
+        aligntoA       = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/{sids}.AligntoGenomeA.bam",
+        aligntoB       = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/{sids}.AligntoGenomeB.bam",
     params:
-        host_genome    = config['host_genome']
-        path_genome    = config['pathogen_genome']
+        host_genome    = config.get('host_genome', ''),
+        path_genome    = config.get('pathogen_genome', ''),
     threads: 32
     resources: mem_mb = 64768
     containerized: config["resources"]["sif"] + "weave_ngsqc_0.0.2.sif"
@@ -76,19 +76,19 @@ rule bwa:
 
 rule disambiguate:
     input:
-        aligntoA       = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/{sids}.AligntoGenomeA.bam"
-        aligntoB       = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/{sids}.AligntoGenomeB.bam"
+        aligntoA       = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/{sids}.AligntoGenomeA.bam",
+        aligntoB       = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/{sids}.AligntoGenomeB.bam",
     output:
-        ambiguousA     = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/{sids}.ambiguousSpeciesA.bam"
-        ambiguousB     = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/{sids}.ambiguousSpeciesB.bam"
-        disambiguousA  = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/{sids}.disambiguatedSpeciesA.bam"
-        disambiguousA  = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/{sids}.disambiguatedSpeciesB.bam"
-        ambiguousA     = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/{sids}_summary.txt"
+        ambiguousA     = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/{sids}.ambiguousSpeciesA.bam",
+        ambiguousB     = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/{sids}.ambiguousSpeciesB.bam",
+        disambiguousA  = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/{sids}.disambiguatedSpeciesA.bam",
+        disambiguousB  = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/{sids}.disambiguatedSpeciesB.bam",
+        dis_summary    = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/{sids}_summary.txt",
     params:
-        host_genome    = config['host_genome']
-        path_genome    = config['pathogen_genome']
-        this_sid       = lambda wc: wc.sids
-        out_dir        = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/"
+        host_genome    = config.get('host_genome', ''),
+        path_genome    = config.get('pathogen_genome', ''),
+        this_sid       = lambda wc: wc.sids,
+        out_dir        = config["out_to"] + "/" + config["project"] + "/{sids}/disambiguate/",
     containerized: config["resources"]["sif"] + "ngs_disambiguate_2018.05.03.sif"
     log: config['out_to'] + "/logs/" + config["project"] + "/disambiguate/{sids}.log"
     threads: 32

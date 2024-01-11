@@ -34,13 +34,18 @@ def run(args):
         exec_config['demux_data'].append(files.check_if_demuxed(rundir))
 
         # ~~~ disambiguate genome configuration ~~~
-        exec_config['host_genome'] = None
-        exec_config['pathogen_genome'] = None
         if all([args.host, args.pathogen]):
+            if 'disambiguate' not in exec_config:
+                exec_config['disambiguate'] = []
+            if 'host_genome' not in exec_config:
+                exec_config['host_genome'] = []
+            if 'pathogen_genome' not in exec_config:
+                exec_config['pathogen_genome'] = []
+
             utils.valid_host_pathogen_genomes(args.host, args.pathogen)
-            exec_config['disambiguate'] = True
-            exec_config['host_genome'] = config.get_genome_path(args.host)
-            exec_config['pathogen_genome'] = config.get_genome_path(args.pathogen)
+            exec_config['disambiguate'].append(True)
+            exec_config['host_genome'].append(args.host)
+            exec_config['pathogen_genome'].append(args.pathogen)
         else:
             assert(not any([args.host, args.pathogen])), 'Must specify both host and pathogen genometype!'
 
@@ -99,7 +104,7 @@ if __name__ == '__main__':
                             help='Execute pipeline locally without a dispatching executor')
     
     # disambiguate arguments
-    parser_run.add_argument('-h', '--host', type=files.valid_fasta, default=None,
+    parser_run.add_argument('-t', '--host', type=files.valid_fasta, default=None,
                         help='Execute pipeline locally without a dispatching executor.')
     alias_table = "\n" + utils.get_alias_table() + "\n"
     parser_run.add_argument('-p', '--pathogen', type=files.valid_fasta, default=None,

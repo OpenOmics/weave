@@ -128,7 +128,7 @@ else:
 if config["runqc"]:
     all_outputs.extend(qa_qc_outputs)
 
-if config['disambiguate']:
+if config.get('disambiguate', False):
     all_outputs.extend(flatten([
         expand("{out_to}/{project}/{sids}/disambiguate/{sids}.ambiguousSpeciesA.bam", **demux_expand_args),
         expand("{out_to}/{project}/{sids}/disambiguate/{sids}.ambiguousSpeciesB.bam", **demux_expand_args),

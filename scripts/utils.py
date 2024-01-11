@@ -246,7 +246,7 @@ def exec_pipeline(configs, dry_run=False, local=False):
             if not bclcon_log_dir.exists():
                 bclcon_log_dir.mkdir(mode=0o755, parents=True)
             extra_to_mount.append(str(bclcon_log_dir) + ":" + "/var/log/bcl-convert:rw")
-        if this_config['disambiguate']:
+        if this_config.get('disambiguate', False):
             extra_to_mount.append(Path(this_config['host_genome']).parent)
             extra_to_mount.append(Path(this_config['pathogen_genome']).parent)
         singularity_binds = get_mounts(*extra_to_mount)
@@ -301,21 +301,15 @@ def valid_host_pathogen_genomes(host, pathogen):
     if Path(host).absolute().exists():
         g1 = True
         host = str(Path(host).absolute())
-    elif host.lower() in genomes:
-        g1 = True
-        host = genomes[host.lower()]
 
-    if Path(g2).absolute().exists():
+    if Path(pathogen).absolute().exists():
         g2 = True
         pathogen = str(Path(pathogen).absolute())
-    elif pathogen.lower() in genomes:
-        g2 = True
-        pathogen = genomes[pathogen.lower()]
 
     if not all([g1, g2]):
         if not g1:
-            raise ValueError('Host genome does not exist on the file system or in the aliases.')
+            raise ValueError('Host genome does not exist on the file system.')
         if not g2:
-            raise ValueError('Pathogen genome does not exist on the file system or in the aliases.')
+            raise ValueError('Pathogen genome does not exist on the file system.')
 
     return host, pathogen
