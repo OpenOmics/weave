@@ -69,8 +69,8 @@ rule bwa:
     log: config['out_to'] + "/logs/" + config["project"] + "/bwa_mem/{sids}.log"
     shell:
         """
-        bwa mem -t {threads} {params.host_genome} {input.in_read1} {input.in_read2} | samtools sort -@ {threads} -o {output.aligntoA} -
-        bwa mem -t {threads} {params.path_genome} {input.in_read1} {input.in_read2} | samtools sort -@ {threads} -o {output.aligntoB} -
+        bwa mem -t {threads} {params.host_genome} {input.in_read1} {input.in_read2} | samtools sort -@ {threads} -n -o {output.aligntoA} -
+        bwa mem -t {threads} {params.path_genome} {input.in_read1} {input.in_read2} | samtools sort -@ {threads} -n -o {output.aligntoB} -
         """
 
 
