@@ -8,6 +8,7 @@ import json
 import os
 import yaml
 import sys
+import textwrap
 from argparse import ArgumentTypeError
 from dateutil.parser import parse as date_parser
 from subprocess import Popen, PIPE, STDOUT
@@ -41,8 +42,8 @@ class PathJSONEncoder(json.JSONEncoder):
 
 
 def get_alias_table():
-    pp_tbl = lambda x: "\n".join([y.lstrip().rstrip() for y in x.split('\n')])
-    return pp_tbl("""+----------------+-------------------------------------------+
+    return textwrap.dedent("""Genome short name alias table:
+                     +----------------+-------------------------------------------+
                      | Organism       | Genomes supported (aka)                   |
                      +----------------+-------------------------------------------+
                      | HUMAN          | hg19(grch37) / hg38(grch38)               |

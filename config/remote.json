@@ -1,6 +1,8 @@
 {
     "bcl2fastq": "docker://umccr/bcl2fastq:latest",
     "weave": "docker://rroutsong/weave_ngsqc:0.0.1",
+    "bclconvert": "docker://rroutsong/weave_bclconvert:0.0.3",
+    "disambiguate": "docker://quay.io/biocontainers/ngs-disambiguate:2018.05.03--hf393df8_7",
     "kraken": "https://genome-idx.s3.amazonaws.com/kraken/k2_pluspfp_16gb_20231009.tar.gz",
     "kaiju": "https://kaiju-idx.s3.eu-central-1.amazonaws.com/2023/kaiju_db_nr_euk_2023-05-10.tgz",
     "fastq_screen": "filelist://www.bioinformatics.babraham.ac.uk/projects/fastq_screen/genome_locations.txt"

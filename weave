@@ -83,10 +83,10 @@ def unlock_dir(sub_args):
 
 # ~~~~ argument parsing commands ~~~~
 if __name__ == '__main__':
-    main_parser = argparse.ArgumentParser(prog='weave')
+    main_parser = argparse.ArgumentParser(prog='weave', formatter_class=argparse.RawTextHelpFormatter, epilog=utils.get_alias_table())
     sub_parsers = main_parser.add_subparsers(help='run subcommand help')
 
-    parser_run = sub_parsers.add_parser('run')
+    parser_run = sub_parsers.add_parser('run', formatter_class=argparse.RawTextHelpFormatter, epilog=utils.get_alias_table())
     parser_run.add_argument('rundir', metavar='<run directory>', nargs="+", type=utils.valid_run_input, 
                             help='Full & complete run id (format YYMMDD_INSTRUMENTID_TIME_FLOWCELLID) or absolute paths')
     parser_run.add_argument('-s', '--seq_dir', metavar='<sequencing directory>', default=None, type=str,
@@ -106,9 +106,9 @@ if __name__ == '__main__':
     # disambiguate arguments
     parser_run.add_argument('-t', '--host', type=files.valid_fasta, default=None,
                         help='Execute pipeline locally without a dispatching executor.')
-    alias_table = "\n" + utils.get_alias_table() + "\n"
+    
     parser_run.add_argument('-p', '--pathogen', type=files.valid_fasta, default=None,
-                        help='Execute pipeline locally without a dispatching executor. ' + alias_table)
+                        help='Execute pipeline locally without a dispatching executor.')
 
     parser_cache = sub_parsers.add_parser('cache')
     parser_cache.add_argument('cachedir', metavar='<cache directory>', type=cache.valid_dir, 
