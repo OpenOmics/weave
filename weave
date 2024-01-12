@@ -88,37 +88,37 @@ if __name__ == '__main__':
 
     parser_run = sub_parsers.add_parser('run', formatter_class=argparse.RawTextHelpFormatter, epilog=utils.get_alias_table())
     parser_run.add_argument('rundir', metavar='<run directory>', nargs="+", type=utils.valid_run_input, 
-                            help='Full & complete run id (format YYMMDD_INSTRUMENTID_TIME_FLOWCELLID) or absolute paths')
+                            help='Full & complete run id (format YYMMDD_INSTRUMENTID_TIME_FLOWCELLID) or absolute paths.')
     parser_run.add_argument('-s', '--seq_dir', metavar='<sequencing directory>', default=None, type=str,
                             help='Root directory for sequencing data (defaults for biowulf/bigsky/locus), must contain directories ' + \
                             'matching run ids, if not using full paths.')
     parser_run.add_argument('-o', '--output', metavar='<output directory>', default=None, type=str, 
-                            help='Top-level output directory for demultiplexing data (defaults to input directory + runid + "_demux")')
+                            help='Top-level output directory for demultiplexing data (defaults to input directory + runid + "_demux").')
     parser_run.add_argument('-d', '--dry-run', action='store_true',
-                            help='Dry run the demultiplexing workflow')
+                            help='Dry run the demultiplexing workflow.')
     parser_run.add_argument('-n', '--noqc', action='store_false',
-                            help='Do not run the QC/QA portion of the workflow (Default is on)')
+                            help='Do not run the QC/QA portion of the workflow (Default is on).')
     parser_run.add_argument('--sheetname', metavar='Sample Sheet Filename', 
-                            help='Name of the sample sheet file to look for (default is SampleSheet.csv)')
+                            help='Name of the sample sheet file to look for (default is SampleSheet.csv).')
     parser_run.add_argument('-l', '--local', action='store_true',
-                            help='Execute pipeline locally without a dispatching executor')
+                            help='Execute pipeline locally without a dispatching executor.')
     
     # disambiguate arguments
     parser_run.add_argument('-t', '--host', type=files.valid_fasta, default=None,
-                        help='Execute pipeline locally without a dispatching executor.')
+                        help='Full path to host genome for disambiguate to use or short name genome alias.')
     
     parser_run.add_argument('-p', '--pathogen', type=files.valid_fasta, default=None,
-                        help='Execute pipeline locally without a dispatching executor.')
+                        help='Full path to pathogen/graft/parasite genome for disambiguate to use or short name genome alias.')
 
     parser_cache = sub_parsers.add_parser('cache')
     parser_cache.add_argument('cachedir', metavar='<cache directory>', type=cache.valid_dir, 
-                            help='Relative or absolute path to directory for cache storage')
+                            help='Relative or absolute path to directory for cache storage.')
     parser_cache.add_argument('-l', '--local', action='store_true',
                             help='Execute pipeline locally without a dispatching executor')
     
     parser_unlock = sub_parsers.add_parser('unlock')
     parser_unlock.add_argument('unlockdir', metavar='<directory to unlock>', type=cache.valid_dir, 
-                            help='Relative or absolute path to directory for cache storage')
+                            help='Full path to directory to unlock.')
 
     parser_run.set_defaults(func = run)
     parser_cache.set_defaults(func = get_cache)
