@@ -3,12 +3,12 @@
 # ~~~~~~~~~~~~~~~
 #   file system helper functions for the Dmux software package
 # ~~~~~~~~~~~~~~~
-from pathlib import Path
 import xml.etree.ElementTree as ET
+from pathlib import Path
 from os import access as check_access, R_OK, W_OK
 from functools import partial
 from .samplesheet import IllumniaSampleSheet
-from .config import get_current_server, LABKEY_CONFIGS, DIRECTORY_CONFIGS
+from .config import get_current_server, GENOME_CONFIGS, DIRECTORY_CONFIGS
 
 
 def get_all_seq_dirs(top_dir, server):
@@ -46,6 +46,32 @@ def valid_run_output(output_directory, dry_run=False):
     if not check_access(output_directory, W_OK):
         raise PermissionError(f'Can not write to output directory {output_directory}')
     return output_directory
+
+
+def valid_fasta(suspect):
+    server_genomes = GENOME_CONFIGS[get_current_server()]
+    is_valid = False
+    if suspect.lower() in server_genomes:
+        is_valid = True
+        suspect = server_genomes[suspect.lower()]
+    else:
+        the_suspect = Path(suspect)
+        exts = the_suspect.suffixes
+        if any([
+            '.fna' in exts,
+            '.fa' in exts,
+            '.fasta' in exts,
+            '.fna' in exts and '.gz' in exts,
+            '.fa' in exts and '.gz' in exts,
+            '.fasta' in exts and '.gz' in exts,
+        ]):
+            is_valid = True
+            suspect = str(Path(suspect).absolute())
+
+    if not is_valid:
+        raise ValueError
+            
+    return suspect
 
 
 def get_all_staged_dirs(top_dir, server):

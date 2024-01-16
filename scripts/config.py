@@ -159,3 +159,41 @@ DIRECTORY_CONFIGS = {
         "profile": Path(Path(__file__).parent.parent, "utils", "profiles", "biowulf").resolve(),
     }
 }
+
+
+GENOME_CONFIGS = {
+    "biowulf": {
+        "hg19": "/vf/users/OpenOmics/references/genomes/human/hg19/GRCh37.primary_assembly.genome.fa.gz",
+        "grch37": "/vf/users/OpenOmics/references/genomes/human/GRCh37/GRCh37.primary_assembly.genome.fa.gz",
+        "hg38": "/vf/users/OpenOmics/references/genomes/human/hg38/GRCh38.p14.genome.fa.gz",
+        "grch38":  "/vf/users/OpenOmics/references/genomes/human/GRCh38/GRCh38.p14.genome.fa.gz",
+        "mm9":  "/vf/users/OpenOmics/references/genomes/mouse/mm9/mm9.fa.gz",
+        "grcm37":  "/vf/users/OpenOmics/references/genomes/mouse/GRCm37/mm9.fa.gz",
+        "mm10":  "/vf/users/OpenOmics/references/genomes/mouse/mm10/GRCm38.p4.genome.fa.gz",
+        "grcm38":  "/vf/users/OpenOmics/references/genomes/mouse/GRCm38/GRCm38.p4.genome.fa.gz",
+        "mm39":  "/vf/users/OpenOmics/references/genomes/mouse/mm39/GRCm39.genome.fa.gz",
+        "grcm39":  "/vf/users/OpenOmics/references/genomes/mouse/GRCm39/GRCm3s9.genome.fa.gz",
+        "rhemac10": "/vf/users/OpenOmics/references/genomes/rhesus/rhe10/rheMac10.fa.gz",
+        "mmul10": "/vf/users/OpenOmics/references/genomes/rhesus/mmul10/rheMac10.fa.gz",
+        "agm": "/vf/users/OpenOmics/references/genomes/agm/1.1/GCF_000409795.2_Chlorocebus_sabeus_1.1_genomic.fna.gz",
+        "mesaur": "/vf/users/OpenOmics/references/genomes/mesaur/2.0/GCF_017639785.1_BCM_Maur_2.0_genomic.fna.gz",
+        "cynomac": "/vf/users/OpenOmics/references/genomes/cynomac/v2/GCF_012559485.2_MFA1912RKSv2_genomic.fna.gz",
+    },
+    "bigsky": {
+        "hg19": "/gs1/RTS/OpenOmics/references/genomes/human/hg19/GRCh37.primary_assembly.genome.fa.gz",
+        "grch37": "/gs1/RTS/OpenOmics/references/genomes/human/GRCh37/GRCh37.primary_assembly.genome.fa.gz",
+        "hg38": "/gs1/RTS/OpenOmics/references/genomes/human/hg38/GRCh38.p14.genome.fa.gz",
+        "grch38":  "/gs1/RTS/OpenOmics/references/genomes/human/GRCh38/GRCh38.p14.genome.fa.gz",
+        "mm9":  "/gs1/RTS/OpenOmics/references/genomes/mouse/mm9/mm9.fa.gz",
+        "grcm37":  "/gs1/RTS/OpenOmics/references/genomes/mouse/GRCm37/mm9.fa.gz",
+        "mm10":  "/gs1/RTS/OpenOmics/references/genomes/mouse/mm10/GRCm38.p4.genome.fa.gz",
+        "grcm38":  "/gs1/RTS/OpenOmics/references/genomes/mouse/GRCm38/GRCm38.p4.genome.fa.gz",
+        "mm39":  "/gs1/RTS/OpenOmics/references/genomes/mouse/mm39/GRCm39.genome.fa.gz",
+        "grcm39":  "/gs1/RTS/OpenOmics/references/genomes/mouse/GRCm39/GRCm39.genome.fa.gz",
+        "rhemac10": "/gs1/RTS/OpenOmics/references/genomes/rhesus/rhe10/rheMac10.fa.gz",
+        "mmul10": "/gs1/RTS/OpenOmics/references/genomes/rhesus/mmul10/rheMac10.fa.gz",
+        "agm": "/gs1/RTS/OpenOmics/references/genomes/agm/1.1/GCF_000409795.2_Chlorocebus_sabeus_1.1_genomic.fna.gz",
+        "mesaur": "/gs1/RTS/OpenOmics/references/genomes/mesaur/2.0/GCF_017639785.1_BCM_Maur_2.0_genomic.fna.gz",
+        "cynomac": "/gs1/RTS/OpenOmics/references/genomes/cynomac/v2/GCF_012559485.2_MFA1912RKSv2_genomic.fna.gz",
+    },
+}
