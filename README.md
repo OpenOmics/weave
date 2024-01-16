@@ -4,7 +4,7 @@
   
   **_An awesome demultiplexing and quality control pipeline_**
 
-  [![tests](https://github.com/OpenOmics/weave/workflows/tests/badge.svg)](https://github.com/OpenOmics/weave/actions/workflows/main.yaml) [![docs](https://github.com/OpenOmics/weave/actions/workflows/doc.yml/badge.svg)](https://github.com/OpenOmics/weave/actions/workflows/docs.yml) [![GitHub issues](https://img.shields.io/github/issues/OpenOmics/weave?color=brightgreen)](https://github.com/OpenOmics/weave/issues)  [![GitHub license](https://img.shields.io/github/license/OpenOmics/weave)](https://github.com/OpenOmics/weave/blob/main/LICENSE) 
+  [![tests](https://github.com/OpenOmics/weave/workflows/tests/badge.svg)](https://github.com/OpenOmics/weave/actions/workflows/dryrun.yaml) [![docs](https://github.com/OpenOmics/weave/actions/workflows/doc.yml/badge.svg)](https://github.com/OpenOmics/weave/actions/workflows/docs.yml) [![GitHub issues](https://img.shields.io/github/issues/OpenOmics/weave?color=brightgreen)](https://github.com/OpenOmics/weave/issues)  [![GitHub license](https://img.shields.io/github/license/OpenOmics/weave)](https://github.com/OpenOmics/weave/blob/main/LICENSE) 
   
   <i>
     This is the home of the pipeline, weave. Its long-term goals: to provide accurate quantification, taxonomic classification, and functional profiling of assembled (bacteria and archaea) metagenomes!
@@ -18,8 +18,7 @@ The **`./weave`** pipeline is composed of two sub commands to setup and run the 
 
 > [weave **run**](https://openomics.github.io/weave/usage/run/)   
 > Run the weave pipeline with your input files.
-
-
+>
 > [weave **cache**](https://openomics.github.io/weave/usage/cache/)  
 > Downloads the reference files for the pipeline to a selected directory.
 
