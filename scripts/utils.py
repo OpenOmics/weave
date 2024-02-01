@@ -113,9 +113,10 @@ def exec_snakemake(popen_cmd, local=False, dry_run=False, env=None, cwd=None):
     else:
         popen_kwargs['cwd'] = str(Path.cwd())
 
+    parent_jobid = None
     if local or dry_run:
-        proc = Popen(popen_cmd, stdout=PIPE, stderr=STDOUT, **popen_kwargs)
-        parent_jobid = None
+        popen_kwargs['env'].update(os.environ)
+        proc = Popen(map(str, popen_cmd), stdout=PIPE, stderr=STDOUT, **popen_kwargs)
         for line in proc.stdout:
             lutf8 = line.decode('utf-8')
             jid_search = re.search(r"external jobid \'(\d+)\'", lutf8, re.MULTILINE)
@@ -139,15 +140,16 @@ def exec_snakemake(popen_cmd, local=False, dry_run=False, env=None, cwd=None):
 def mk_sbatch_script(wd, cmd):
     if not Path(wd, 'logs', 'masterjob').exists():
         Path(wd, 'logs', 'masterjob').mkdir(mode=0o755, parents=True)
+    shebang = "#!/bin/bash --login" if host == 'skyline' else '#!/bin/bash'
     master_job_script = \
     f"""
-    #!/bin/bash
+    {shebang}
     #SBATCH --job-name=weave_masterjob
     #SBATCH --output={wd}/logs/masterjob/%x_%j.out
     #SBATCH --error={wd}/logs/masterjob/%x_%j.err
     #SBATCH --ntasks=1
     #SBATCH --cpus-per-task=2
-    #SBATCH --time=02-00:00:00
+    #SBATCH --time=05-00:00:00
     #SBATCH --export=ALL
     #SBATCH --mem=16g
     """.lstrip()
@@ -169,7 +171,9 @@ def get_mods(init=False):
         mod_cmd.append('source /gs1/apps/user/rmlspack/share/spack/setup-env.sh')
         mod_cmd.append('spack load miniconda3@4.11.0')
         mod_cmd.append('source activate snakemake7-19-1')
-    else:
+    elif host == 'skyline':
+        mod_cmd.append('source /data/openomics/bin/dependencies.sh')
+    elif host == 'biowulf':
         if init:
             mod_cmd.append('source /etc/profile.d/modules.sh')
         else:
@@ -259,7 +263,7 @@ def exec_pipeline(configs, dry_run=False, local=False):
         top_env['SINGULARITY_CACHEDIR'] = str(Path(this_config['out_to'], '.singularity').absolute())
         this_cmd = [
             "snakemake",
-            "-pr",
+            "-pr", "--cores", "all",
             "--use-singularity",
             "--rerun-incomplete",
             "--keep-incomplete",

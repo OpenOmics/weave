@@ -4,3 +4,4 @@ terminaltables
 pyyaml
 tabulate
 progressbar
+python-dateutil

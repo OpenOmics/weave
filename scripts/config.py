@@ -20,11 +20,11 @@ def get_current_server():
     re_biowulf_head = (r"biowulf\.nih\.gov", "biowulf")
     re_biowulf_compute = (r"cn\d{4}", "biowulf")
     
-    # locus hostnames
-    re_locus_head = (r"ai\-submit\d{1}", "locus")
-    re_locus_compute = (r"ai\-hpcn\d{3}", "locus")
+    # skyline hostnames
+    re_skyline_head = (r"ai-hpc(submit|n)(\d+)?", "skyline")
+    re_skyline_compute = (r"ai-hpc(submit|n)(\d+)?", "skyline")
 
-    host_profiles = [re_bigsky, re_biowulf_compute, re_biowulf_head, re_locus_compute, re_locus_head]
+    host_profiles = [re_bigsky, re_biowulf_compute, re_biowulf_head, re_skyline_head, re_skyline_compute]
 
     host = None
     for pat, this_host in host_profiles:
@@ -157,6 +157,11 @@ DIRECTORY_CONFIGS = {
         "seqroot": "/data/RTB_GRS/SequencerRuns/",
         "seq": get_biowulf_seq_dirs(),
         "profile": Path(Path(__file__).parent.parent, "utils", "profiles", "biowulf").resolve(),
+    },
+    "skyline": {
+        "seqroot": "/data/rtb_grs/SequencerRuns/",
+        "seq": get_bigsky_seq_dirs(),
+        "profile": Path(Path(__file__).parent.parent, "utils", "profiles", "skyline").resolve(),
     }
 }
 

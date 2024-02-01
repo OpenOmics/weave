@@ -23,9 +23,9 @@ rule fastqc_untrimmed:
         fqreport      = config['out_to'] + "/" + config["project"] + "/{sids}/fastqc_untrimmed/{sids}_R{rnums}_" + trim_input_suffix + "_fastqc.zip",
     params:
         output_dir    = lambda w: config['out_to'] + "/" + config["project"] + "/" + w.sids + "/fastqc_untrimmed/"
-    log: config['out_to'] + "/logs/" + "/" + config["project"] + "/fastqc_untrimmed/{sids}_R{rnums}.log"
+    log: config['out_to'] + "/logs/" + config["project"] + "/fastqc_untrimmed/{sids}_R{rnums}.log"
     threads: 4
-    containerized: config["resources"]["sif"] + "weave_ngsqc_0.0.1.sif"
+    containerized: config["resources"]["sif"] + "weave_ngsqc_0.0.2.sif"
     resources: mem_mb = 8096
     shell:
         """
@@ -42,7 +42,7 @@ rule fastqc_trimmed:
         fqreport      = config['out_to'] + "/" + config["project"] + "/{sids}/fastqc_trimmed/{sids}_trimmed_R{rnums}_fastqc.zip",
     params:
         output_dir    = lambda w: config['out_to'] + "/" + config["project"] + "/" + w.sids + "/fastqc_trimmed/"
-    containerized: config["resources"]["sif"] + "weave_ngsqc_0.0.1.sif"
+    containerized: config["resources"]["sif"] + "weave_ngsqc_0.0.2.sif"
     threads: 4
     resources: mem_mb = 8096
     log: config['out_to'] + "/logs/" + config["project"] + "/fastqc_trimmed/{sids}_R{rnums}.log"
@@ -124,7 +124,7 @@ rule multiqc_report:
         input_dir       = config['out_to'],
         output_dir      = config['out_to'] + "/" + config["project"] + "/multiqc/",
         report_title    = "Run: " + config["run_ids"] + ", Project: " + config["project"],
-    containerized: config["resources"]["sif"] + "weave_ngsqc_0.0.1.sif"
+    containerized: config["resources"]["sif"] + "weave_ngsqc_0.0.2.sif"
     threads: 4
     resources: mem_mb = 8096
     log: 
