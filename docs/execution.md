@@ -109,3 +109,9 @@ weave run \
 -o output_dir \
 <run_id>
 ```
+
+Same sbatch execution as bigsky/skyline.
+
+```bash
+sbatch weave_script.sbatch
+```
