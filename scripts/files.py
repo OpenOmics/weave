@@ -155,6 +155,10 @@ def get_run_directories(runids, seq_dir=None, sheetname=None):
     host = get_current_server()
     seq_dirs = Path(seq_dir).absolute() if seq_dir else Path(DIRECTORY_CONFIGS[host]['seqroot'])
     seq_contents = [_child for _child in seq_dirs.iterdir()]
+    for firstchild in seq_dirs.iterdir():
+        if firstchild.is_dir():
+            for secondchild in firstchild.iterdir():
+                seq_contents.append(secondchild)
     seq_contents_names = [child for child in map(lambda d: d.name, seq_contents)]
     
     run_paths, invalid_runs  = [], []

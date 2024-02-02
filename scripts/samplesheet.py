@@ -65,13 +65,16 @@ class IllumniaSampleSheet():
     def process_v1_reads_section(self, section):
         section = [x for x in section if set(x) != {','}]
         r1, r2 = None, None
-        for i, line in enumerate(section, start=1):
-            if line.split(',')[0].isnumeric() and i == 1:
-                r1 = int(line.split(',')[0])
-            elif line.split(',')[0].isnumeric() and i == 2:
-                r2 = int(line.split(',')[0])
-            else:
-                self.process_simple_section([line])        
+        for line in section:
+            this_line_name = line.split(',')[0]
+            this_line_val = line.split(',')[1]
+            if this_line_name.lower() in ('read01', 'read02') and this_line_val.isnumeric():
+                if this_line_name.endswith('1') and int(this_line_val) > 0:
+                    r1 = int(this_line_val)
+                elif this_line_name.endswith('2') and int(this_line_val) > 0:
+                    r2 = int(this_line_val)
+        else:
+            self.process_simple_section([line])
         if r1:
             setattr(self, 'Read01', r1)
         if r2:
