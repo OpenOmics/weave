@@ -33,20 +33,16 @@ rule bcl2fastq:
         out_dir                = config["out_to"] + "/demux",
     container: config["resources"]["sif"] + "bcl2fastq.sif",
     log: config["out_to"] + "/logs/bcl2fastq/" + config["run_ids"] + "_" + config["project"] + ".log",
-    threads: 26
+    threads: 75
     resources: 
-        mem_mb = "32G",
-        slurm_partition = "quick",
-        runtime = 60*4,
-        tasks = 1,
-        disk_mb = 5*1024
+        mem_mb = int(64e3),
     shell: 
         """
             bcl2fastq \
             --sample-sheet {input.samplesheet} \
             --runfolder-dir {input.run_dir} \
             --min-log-level=TRACE \
-            -r 8 -p 8 -w 8 \
+            -r 16 -p 40 -w 16 \
             --fastq-compression-level 9 \
             --no-lane-splitting \
             -o {params.out_dir}
