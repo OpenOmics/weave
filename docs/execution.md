@@ -12,9 +12,9 @@ The **weave** pipeline can be triggered from a head node in a non-interactive fa
 ## Bigsky/Skyline
 
 !!! Note
-    Dependency files for skyline and bigsky differ
-    Bigsky: `/gs1/RTS/OpenOmics/bin/dependencies.sh`
-    Skyline: `/data/openomics/bin/dependencies.sh`
+    Dependency files for skyline and bigsky differ <br />
+    **Bigsky: `/gs1/RTS/OpenOmics/bin/dependencies.sh`** <br />
+    **Skyline: `/data/openomics/bin/dependencies.sh`**
 
 ```bash
 source ${dependencies}
@@ -22,7 +22,7 @@ srun --export=ALL "weave run [keyword args] ${run_id}"
 ```
 
 !!! Note
-    srun (by default)[https://slurm.schedmd.com/srun.html#OPT_export] exports all environmental variables from the executing environment and `--export=ALL` can be left off
+    srun <a href="https://slurm.schedmd.com/srun.html#OPT_export">by default</a> exports all environmental variables from the executing environment and `--export=ALL` can be left off
 
 ## Biowulf
 
@@ -35,9 +35,9 @@ srun --export=ALL "module load snakemake singularity; weave run [keyword args] $
 ## Bigsky/Skyline
 
 !!! Note
-    Dependency files for skyline and bigsky differ
-    Bigsky: `/gs1/RTS/OpenOmics/bin/dependencies.sh`
-    Skyline: `/data/openomics/bin/dependencies.sh`
+    Dependency files for skyline and bigsky differ <br />
+    **Bigsky: `/gs1/RTS/OpenOmics/bin/dependencies.sh`** <br />
+    **Skyline: `/data/openomics/bin/dependencies.sh`**
 
 ```bash
 > # <head node>
