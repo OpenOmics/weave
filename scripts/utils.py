@@ -83,7 +83,7 @@ def valid_runid(id_to_check):
 
 
 def valid_run_input(run):
-    regex_run_id = r"(\d{6})_([A-Z]{1,2}\d{5,6})(_\d{1,4})?(_\N+)"
+    regex_run_id = r"(\d{6})_([A-Z]{1,2}\d{5,6})(_\d{1,4})?_(.+)"
     match_id = re.search(regex_run_id, run, re.MULTILINE)
     if match_id:
         return run
