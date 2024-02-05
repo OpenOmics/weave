@@ -7,7 +7,6 @@
 import subprocess
 import json
 import urllib.request
-import progressbar
 from argparse import ArgumentTypeError
 from pathlib import Path
 from urllib.parse import urlparse
@@ -81,7 +80,14 @@ def handle_download(output_dir, resource, protocol, url):
     if protocol in ('http', 'https', 'ftp'):
         info_download(f"Getting web resource {resource}...")
         fnurl = Path(urlparse(url).path).stem
-        urllib.request.urlretrieve(uri, filename=Path(output_dir, fnurl), reporthook=DownloadProgressBar())
+        try:
+            import progressbar
+            urllib.request.urlretrieve(uri, filename=Path(output_dir, fnurl), reporthook=DownloadProgressBar())
+        except ModuleNotFoundError:
+            print('Downloading resources....')
+            urllib.request.urlretrieve(uri, filename=Path(output_dir, fnurl))
+            print('....done.')
+
     elif protocol in ('docker'):
         info_download(f"Getting docker resource {resource}...")
         docker_tag = url.split('/')[-1]
