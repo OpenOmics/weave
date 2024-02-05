@@ -262,8 +262,7 @@ def exec_pipeline(configs, dry_run=False, local=False):
         top_env['SNK_CONFIG'] = str(config_file.absolute())
         top_env['SINGULARITY_CACHEDIR'] = str(Path(this_config['out_to'], '.singularity').absolute())
         this_cmd = [
-            "snakemake",
-            "-pr", "--cores", "all",
+            "snakemake", "-pr",
             "--use-singularity",
             "--rerun-incomplete",
             "--keep-incomplete",

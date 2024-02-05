@@ -33,7 +33,7 @@ rule bcl2fastq:
         out_dir                = config["out_to"] + "/demux",
     container: config["resources"]["sif"] + "bcl2fastq.sif",
     log: config["out_to"] + "/logs/bcl2fastq/" + config["run_ids"] + "_" + config["project"] + ".log",
-    threads: 75
+    threads: 34
     resources: 
         mem_mb = int(64e3),
     shell: 
@@ -42,7 +42,7 @@ rule bcl2fastq:
             --sample-sheet {input.samplesheet} \
             --runfolder-dir {input.run_dir} \
             --min-log-level=TRACE \
-            -r 16 -p 40 -w 16 \
+            -r 8 -p 16 -w 8 \
             --fastq-compression-level 9 \
             --no-lane-splitting \
             -o {params.out_dir}
@@ -91,7 +91,7 @@ rule bclconvert:
         top_unknown            = expand("{out_to}/demux/Reports/Top_Unknown_Barcodes.csv", **demux_expand_args if config['bclconvert'] else demux_noop_args),
         breadcrumb             = expand("{out_to}/demux/.BC_DEMUX_COMPLETE", **demux_expand_args if config['bclconvert'] else demux_noop_args),
     container: config["resources"]["sif"] + "weave_bclconvert_0.0.3.sif",
-    threads: 75
+    threads: 34
     resources: mem_mb = int(64e3)
     shell:
         """
@@ -102,9 +102,9 @@ rule bclconvert:
         --sample-sheet {input.samplesheet} \
         --fastq-gzip-compression-level 9 \
         --bcl-sampleproject-subdirectories true \
-        --bcl-num-conversion-threads 24 \
-        --bcl-num-compression-threads 24 \
-        --bcl-num-decompression-threads 24 \
+        --bcl-num-conversion-threads 16 \
+        --bcl-num-compression-threads 8 \
+        --bcl-num-decompression-threads 8 \
         --bcl-num-parallel-tiles 3 \
         --no-lane-splitting true
         touch {output.breadcrumb}
