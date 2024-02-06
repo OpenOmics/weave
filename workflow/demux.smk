@@ -91,7 +91,7 @@ rule bclconvert:
         top_unknown            = expand("{out_to}/demux/Reports/Top_Unknown_Barcodes.csv", **demux_expand_args if config['bclconvert'] else demux_noop_args),
         breadcrumb             = expand("{out_to}/demux/.BC_DEMUX_COMPLETE", **demux_expand_args if config['bclconvert'] else demux_noop_args),
     container: config["resources"]["sif"] + "weave_bclconvert_0.0.3.sif",
-    threads: 34
+    threads: 38
     resources: mem_mb = int(64e3)
     shell:
         """
@@ -102,9 +102,9 @@ rule bclconvert:
         --sample-sheet {input.samplesheet} \
         --fastq-gzip-compression-level 9 \
         --bcl-sampleproject-subdirectories true \
-        --bcl-num-conversion-threads 16 \
-        --bcl-num-compression-threads 8 \
-        --bcl-num-decompression-threads 8 \
+        --bcl-num-conversion-threads 8 \
+        --bcl-num-compression-threads 2 \
+        --bcl-num-decompression-threads 2 \
         --bcl-num-parallel-tiles 3 \
         --no-lane-splitting true
         touch {output.breadcrumb}
