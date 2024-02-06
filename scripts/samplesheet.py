@@ -78,8 +78,8 @@ class IllumniaSampleSheet():
                     r1 = int(this_line_name)
                 elif i == 1:
                     r2 = int(this_line_name)
-        else:
-            self.process_simple_section([line])
+            else:
+                self.process_simple_section([line])
         if r1 and r1 > 0:
             setattr(self, 'Read01', r1)
         if r2 and r2 > 0:
