@@ -26,7 +26,8 @@ rule fastqc_untrimmed:
     log: config['out_to'] + "/logs/" + config["project"] + "/fastqc_untrimmed/{sids}_R{rnums}.log"
     threads: 4
     containerized: config["resources"]["sif"] + "weave_ngsqc_0.0.2.sif"
-    resources: mem_mb = 8096
+    resources: 
+        mem_mb = 8096
     shell:
         """
         mkdir -p {params.output_dir}
@@ -41,15 +42,22 @@ rule fastqc_trimmed:
         html          = config['out_to'] + "/" + config["project"] + "/{sids}/fastqc_trimmed/{sids}_trimmed_R{rnums}_fastqc.html",
         fqreport      = config['out_to'] + "/" + config["project"] + "/{sids}/fastqc_trimmed/{sids}_trimmed_R{rnums}_fastqc.zip",
     params:
-        output_dir    = lambda w: config['out_to'] + "/" + config["project"] + "/" + w.sids + "/fastqc_trimmed/"
+        output_dir    = lambda w: config['out_to'] + "/" + config["project"] + "/" + w.sids + "/fastqc_trimmed/",
+        tmp_dir       = lambda w: "/tmp/" + w.sids,
     containerized: config["resources"]["sif"] + "weave_ngsqc_0.0.2.sif"
     threads: 4
-    resources: mem_mb = 8096
+    resources: 
+        mem_mb = 8096,
+        disk_mb = int(500e3) if config['use_scratch'] else 0,
     log: config['out_to'] + "/logs/" + config["project"] + "/fastqc_trimmed/{sids}_R{rnums}.log"
     shell:
         """
+        if [ ! -d "{params.tmp_dir}" ]; then mkdir -p "{params.tmp_dir}"; fi
+        tmp=$(mktemp -d -p "{params.tmp_dir}")
         mkdir -p {params.output_dir}
-        fastqc -o {params.output_dir} -t {threads} {input.in_read}
+        fastqc -o {params.tmp_dir} -t {threads} {input.in_read}
+        find "{params.tmp_dir}" -type f \\( -name '*.html' -o -name '*.zip' \\) \\-exec cp {{}} {params.output_dir} \\;
+        rm -rf {params.tmp_dir}/*
         """
 
 

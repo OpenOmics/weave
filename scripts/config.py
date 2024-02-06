@@ -1,8 +1,12 @@
 import re
 import json
+import traceback
+import logging
 from pathlib import Path
 from os import access as check_access, R_OK
+from os.path import expandvars
 from socket import gethostname
+from uuid import uuid4
 from collections import defaultdict
 
 
@@ -91,13 +95,14 @@ def get_resource_config():
     return json.load(open(resource_json))
 
 
-def base_config(keys=None, qc=True):
+def base_config(keys=None, qc=True, slurm_id=None):
     base_keys = ('runs', 'run_ids', 'project', 'rnums', 'bcl_files', \
                 'sample_sheet', 'samples', 'sids', 'out_to', 'demux_input_dir', \
                 'bclconvert', 'demux_data')
     this_config = {k: [] for k in base_keys}
     this_config['resources'] = get_resource_config()
     this_config['runqc'] = qc
+    this_config['use_scratch'] = True if slurm_id else False
 
     if keys:
         for elem_key in keys:
@@ -145,6 +150,29 @@ def get_bigsky_seq_dirs():
             if all(elem_checks):
                 seq_dirs.append(this_child_elem.absolute())
     return seq_dirs
+
+
+def get_tmp_dir(host):
+    TMP_CONFIGS = {
+        'skyline': {'user': '/data/scratch/$USER/$SLURM_JOBID', 'global': '/data/scratch/$USER/' + str(uuid4())},
+        'bigsky': {'user': '/gs1/Scratch/$USER/$SLURM_JOBID', 'global': '/gs1/Scratch/$USER/' + str(uuid4())},
+        'biowulf': {'user': '/lscratch/$SLURM_JOBID', 'global': '/tmp/$USER/' + str(uuid4())}
+    }
+
+    this_tmp = TMP_CONFIGS[host]['user']
+
+    try:
+        Path(expandvars(this_tmp)).mkdir(parents=False, exist_ok=True)
+    except Exception as e:
+        logging.error("SLURM TMP DIR NOT FOUND: " + traceback.format_exc())
+        this_tmp = TMP_CONFIGS[host]['global']
+
+    try:
+        Path(expandvars(this_tmp)).mkdir(parents=False, exist_ok=True)
+    except:
+        raise OSError(f'TMPDIR does exist and can not be created: "{this_tmp}"')
+
+    return this_tmp
 
 
 DIRECTORY_CONFIGS = {

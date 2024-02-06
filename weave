@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 import argparse
 import subprocess
+import os
 from pathlib import Path
 from scripts import utils, files, config, cache
 
@@ -11,7 +12,7 @@ def run(args):
     Main frontend for demultiplexing and QA/QC
     """
     runs = files.get_run_directories(args.rundir, seq_dir=args.seq_dir, sheetname=args.sheetname)
-    exec_config = config.base_config(qc=args.noqc)
+    exec_config = config.base_config(qc=args.noqc, slurm_id=os.environ.get("SLURM_JOB_ID", None))
  
     for (rundir, run_infos) in runs:
         sample_sheet = run_infos['samplesheet']

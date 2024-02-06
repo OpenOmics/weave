@@ -16,7 +16,8 @@ from pathlib import Path, PurePath
 
 # ~~~ internals ~~~
 from .files import parse_samplesheet, mk_or_pass_dirs
-from .config import SNAKEFILE, DIRECTORY_CONFIGS, GENOME_CONFIGS, get_current_server, get_resource_config
+from .config import SNAKEFILE, DIRECTORY_CONFIGS, \
+    GENOME_CONFIGS, get_current_server, get_resource_config, get_tmp_dir
 
 
 host = get_current_server()
@@ -140,10 +141,9 @@ def exec_snakemake(popen_cmd, local=False, dry_run=False, env=None, cwd=None):
 def mk_sbatch_script(wd, cmd):
     if not Path(wd, 'logs', 'masterjob').exists():
         Path(wd, 'logs', 'masterjob').mkdir(mode=0o755, parents=True)
-    shebang = "#!/bin/bash --login" if host == 'skyline' else '#!/bin/bash'
+    tmp_dir = get_tmp_dir(get_current_server())
     master_job_script = \
-    f"""
-    {shebang}
+    f"""#!/bin/bash --login
     #SBATCH --job-name=weave_masterjob
     #SBATCH --output={wd}/logs/masterjob/%x_%j.out
     #SBATCH --error={wd}/logs/masterjob/%x_%j.err
@@ -152,8 +152,10 @@ def mk_sbatch_script(wd, cmd):
     #SBATCH --time=05-00:00:00
     #SBATCH --export=ALL
     #SBATCH --mem=16g
+    #SBATCH -vvv
     """.lstrip()
     master_job_script += get_mods(init=True) + "\n"
+    master_job_script += f"if [ ! -d \"{tmp_dir}\" ]; then mkdir -p \"{tmp_dir}\"; fi\n"
     master_job_script += cmd
     master_job_script = '\n'.join([x.lstrip() for x in master_job_script.split('\n')])
     master_script_location = Path(wd, 'logs', 'masterjob', 'master_jobscript.sh').absolute()
@@ -186,6 +188,13 @@ def get_mods(init=False):
 def get_mounts(*extras):
     mount_binds = []
     resources = get_resource_config()
+    slurm_id = os.environ
+
+    if os.environ.get("SLURM_JOB_ID", None):
+        tmpdir = get_tmp_dir(get_current_server())
+        if not Path(os.path.expandvars(tmpdir)).exists():
+            Path(tmpdir).mkdir(parents=True, exist_ok=True)
+        mount_binds.append(str(tmpdir) + ':/tmp:rw')
 
     if resources:
         for this_mount_label, this_mount_attrs in resources['mounts'].items():
@@ -219,7 +228,7 @@ def get_mounts(*extras):
             file_to, file_from, mode = str(bind), str(bind), 'rw'
         mounts.append(file_from + ':' + file_to + ':' + mode)
 
-    return "\'-B " + ','.join(mounts) + "\'"
+    return ','.join(mounts)
 
 
 def exec_pipeline(configs, dry_run=False, local=False):
@@ -239,7 +248,7 @@ def exec_pipeline(configs, dry_run=False, local=False):
     top_config_dirs = [Path(c_dir, '.config').absolute() for c_dir in configs['out_to']]
     _dirs = top_singularity_dirs + top_config_dirs
     mk_or_pass_dirs(*_dirs)
-    skip_config_keys = ('resources', 'runqc')
+    skip_config_keys = ('resources', 'runqc', 'use_scratch')
 
     for i in range(0, len(configs['run_ids'])):
         this_config = {k: (v[i] if k not in skip_config_keys else v) for k, v in configs.items() if v}
@@ -272,7 +281,7 @@ def exec_pipeline(configs, dry_run=False, local=False):
             "--profile", fastq_demux_profile
         ]
         if singularity_binds:
-            this_cmd.extend(["--singularity-args", singularity_binds])
+            this_cmd.extend(["--singularity-args", f"\"--env 'TMPDIR=/tmp' -C -B '{singularity_binds}'\""])
 
         if not local:
             this_cmd.extend(["--profile", f"{fastq_demux_profile}"])
