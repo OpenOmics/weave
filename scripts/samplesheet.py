@@ -80,9 +80,9 @@ class IllumniaSampleSheet():
                     r2 = int(this_line_name)
         else:
             self.process_simple_section([line])
-        if r1:
+        if r1 and r1 > 0:
             setattr(self, 'Read01', r1)
-        if r2:
+        if r2 and r2 > 0:
             setattr(self, 'Read02', r2)
         return
 
