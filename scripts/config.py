@@ -4,7 +4,7 @@ import traceback
 import logging
 from pathlib import Path
 from os import access as check_access, R_OK
-from os.path import expandvars
+from os.path import expandvars, expanduser
 from socket import gethostname
 from uuid import uuid4
 from collections import defaultdict
@@ -161,18 +161,11 @@ def get_tmp_dir(host):
 
     this_tmp = TMP_CONFIGS[host]['user']
 
-    try:
-        Path(expandvars(this_tmp)).mkdir(parents=False, exist_ok=True)
-    except Exception as e:
-        logging.error("SLURM TMP DIR NOT FOUND: " + traceback.format_exc())
-        this_tmp = TMP_CONFIGS[host]['global']
-
-    try:
-        Path(expandvars(this_tmp)).mkdir(parents=False, exist_ok=True)
-    except:
-        raise OSError(f'TMPDIR does exist and can not be created: "{this_tmp}"')
-
-    return this_tmp
+    # this directory, if it does not exist, 
+    if Path(this_tmp).parents[0].exists():
+        return this_tmp
+    else:
+        return TMP_CONFIGS[host]['global']
 
 
 DIRECTORY_CONFIGS = {

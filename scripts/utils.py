@@ -188,13 +188,6 @@ def get_mods(init=False):
 def get_mounts(*extras):
     mount_binds = []
     resources = get_resource_config()
-    slurm_id = os.environ
-
-    if os.environ.get("SLURM_JOB_ID", None):
-        tmpdir = get_tmp_dir(get_current_server())
-        if not Path(os.path.expandvars(tmpdir)).exists():
-            Path(tmpdir).mkdir(parents=True, exist_ok=True)
-        mount_binds.append(str(tmpdir) + ':/tmp:rw')
 
     if resources:
         for this_mount_label, this_mount_attrs in resources['mounts'].items():
@@ -227,6 +220,8 @@ def get_mounts(*extras):
                 raise FileNotFoundError(f"Can't mount {str(bind)}, it doesn't exist!")
             file_to, file_from, mode = str(bind), str(bind), 'rw'
         mounts.append(file_from + ':' + file_to + ':' + mode)
+    
+    mounts.append('\$TMPDIR:/tmp:rw')
 
     return ','.join(mounts)
 

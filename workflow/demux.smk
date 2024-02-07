@@ -36,6 +36,7 @@ rule bcl2fastq:
     threads: 34
     resources: 
         mem_mb = int(64e3),
+        runtime = 4*60,
     shell: 
         """
             bcl2fastq \
@@ -94,6 +95,7 @@ rule bclconvert:
     threads: 50
     resources: 
         mem_mb = int(64e3),
+        runtime = 4*60,
     shell:
         """
         bcl-convert \
