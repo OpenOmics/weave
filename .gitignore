@@ -4,3 +4,4 @@ logs
 site
 output
 .tests/dry_run_out/*
+.tests/dry_run_out/*
