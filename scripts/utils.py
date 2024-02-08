@@ -221,7 +221,7 @@ def get_mounts(*extras):
             file_to, file_from, mode = str(bind), str(bind), 'rw'
         mounts.append(file_from + ':' + file_to + ':' + mode)
     
-    mounts.append('\$TMPDIR:/tmp:rw')
+    mounts.append(r'\$TMPDIR:/tmp:rw')
 
     return ','.join(mounts)
 
@@ -266,7 +266,7 @@ def exec_pipeline(configs, dry_run=False, local=False):
         top_env['SNK_CONFIG'] = str(config_file.absolute())
         top_env['SINGULARITY_CACHEDIR'] = str(Path(this_config['out_to'], '.singularity').absolute())
         this_cmd = [
-            "snakemake", "-pr",
+            "snakemake", "-p", "-r",
             "--use-singularity",
             "--rerun-incomplete",
             "--keep-incomplete",

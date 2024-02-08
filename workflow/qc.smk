@@ -43,12 +43,12 @@ rule fastqc_trimmed:
         fqreport      = config['out_to'] + "/" + config["project"] + "/{sids}/fastqc_trimmed/{sids}_trimmed_R{rnums}_fastqc.zip",
     params:
         output_dir    = lambda w: config['out_to'] + "/" + config["project"] + "/" + w.sids + "/fastqc_trimmed/",
+        tmpdir        = lambda wc: '/tmp/' + wc.sids,
     containerized: config["resources"]["sif"] + "weave_ngsqc_0.0.2.sif"
     threads: 4
     resources: 
-        mem_mb = 8096,
-        disk_mb = int(500e3) if config['use_scratch'] else 0,
-        tmpdir = lambda wc: '/tmp/' + wc.sids,
+        mem_mb        = 8096,
+        disk_mb       = int(500e3) if config['use_scratch'] else 0,
     log: config['out_to'] + "/logs/" + config["project"] + "/fastqc_trimmed/{sids}_R{rnums}.log"
     shell:
         """
@@ -74,7 +74,7 @@ rule fastqc_trimmed:
         find "${{tmp}}" \\
             -type f \\
             \\( -name '*.html' -o -name '*.zip' \\) \\
-            -exec cp {{}} {params.outdir} \\;
+            -exec cp {{}} {params.output_dir} \\;
         """
 
 
