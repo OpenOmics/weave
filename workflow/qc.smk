@@ -48,7 +48,7 @@ rule fastqc_trimmed:
     threads: 4
     resources: 
         mem_mb        = 8096,
-        disk_mb       = int(500e3) if config['use_scratch'] else 0,
+        disk_mb       = int(500e3) if config.get('use_scratch', True) else 0,
     log: config['out_to'] + "/logs/" + config["project"] + "/fastqc_trimmed/{sids}_R{rnums}.log"
     shell:
         """

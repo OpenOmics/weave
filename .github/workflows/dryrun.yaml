@@ -14,7 +14,7 @@ jobs:
     - uses: docker://snakemake/snakemake:v7.32.4
     - name: Dry Run with test data
       run: |
-        docker run -h cn0000 -v $PWD:/opt2 -w /opt2 snakemake/snakemake:stable /bin/bash -c \
+        docker run -h cn0000 -v $PWD:/opt2 -w /opt2 snakemake/snakemake:v7.32.4 /bin/bash -c \
         "source get_submods.sh; pip install -r requirements.txt; ./weave run --sheetname paired_end.csv -s /opt2/.tests/paired_end -o /opt2/.tests/dry_run_out --local --dry-run /opt2/.tests/paired_end"
     - name: View the pipeline config file
       run: |
@@ -52,7 +52,7 @@ jobs:
     - uses: docker://snakemake/snakemake:v7.32.4
     - name: Dry Run with test data
       run: |
-        docker run -h cn0000 -v $PWD:/opt2 -w /opt2 snakemake/snakemake:stable /bin/bash -c \
+        docker run -h cn0000 -v $PWD:/opt2 -w /opt2 snakemake/snakemake:v7.32.4 /bin/bash -c \
         "source get_submods.sh; pip install -r requirements.txt;./weave run --sheetname single_end.csv -s /opt2/.tests/single_end -o /opt2/.tests/dry_run_out --local --dry-run /opt2/.tests/single_end"
     - name: View the pipeline config file
       run: |
