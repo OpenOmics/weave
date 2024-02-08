@@ -275,7 +275,7 @@ def exec_pipeline(configs, dry_run=False, local=False):
             "-s", snake_file,
             "--profile", fastq_demux_profile
         ]
-        if singularity_binds:
+        if singularity_binds and not dry_run:
             this_cmd.extend(["--singularity-args", f"\"--env 'TMPDIR=/tmp' -C -B '{singularity_binds}'\""])
 
         if not local:
@@ -284,7 +284,7 @@ def exec_pipeline(configs, dry_run=False, local=False):
         if dry_run:
             print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC}{esc_colors.UNDERLINE}Dry run{esc_colors.ENDC} " + \
                   f"demultiplexing of run {esc_colors.BOLD}{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
-            this_cmd.extend(['--dry-run', '-p'])
+            this_cmd.extend(['--dry-run'])
         else:
             print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC}Executing ngs qc pipeline for run {esc_colors.BOLD}"
                   f"{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")

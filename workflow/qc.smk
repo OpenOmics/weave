@@ -43,21 +43,38 @@ rule fastqc_trimmed:
         fqreport      = config['out_to'] + "/" + config["project"] + "/{sids}/fastqc_trimmed/{sids}_trimmed_R{rnums}_fastqc.zip",
     params:
         output_dir    = lambda w: config['out_to'] + "/" + config["project"] + "/" + w.sids + "/fastqc_trimmed/",
-        tmp_dir       = lambda w: "/tmp/" + w.sids,
     containerized: config["resources"]["sif"] + "weave_ngsqc_0.0.2.sif"
     threads: 4
     resources: 
         mem_mb = 8096,
         disk_mb = int(500e3) if config['use_scratch'] else 0,
+        tmpdir = lambda wc: '/tmp/' + wc.sids,
     log: config['out_to'] + "/logs/" + config["project"] + "/fastqc_trimmed/{sids}_R{rnums}.log"
     shell:
         """
-        if [ ! -d "{params.tmp_dir}" ]; then mkdir -p "{params.tmp_dir}"; fi
-        tmp=$(mktemp -d -p "{params.tmp_dir}")
-        mkdir -p {params.output_dir}
-        fastqc -o {params.tmp_dir} -t {threads} {input.in_read}
-        find "{params.tmp_dir}" -type f \\( -name '*.html' -o -name '*.zip' \\) \\-exec cp {{}} {params.output_dir} \\;
-        rm -rf {params.tmp_dir}/*
+        # Setups temporary directory for
+        # intermediate files with built-in 
+        # mechanism for deletion on exit
+        if [ ! -d "{params.tmpdir}" ]; then mkdir -p "{params.tmpdir}"; fi
+        tmp=$(mktemp -d -p "{params.tmpdir}")
+        trap 'rm -rf "${{tmp}}"' EXIT
+        
+        # Running fastqc with local
+        # disk or a tmpdir, fastqc
+        # has been observed to lock
+        # up gpfs filesystems, adding
+        # this on request by HPC staff. 
+        fastqc \\
+            {input.in_read} \\
+            -t {threads} \\
+            -o "${{tmp}}"
+        
+        # Copy output files from tmpdir
+        # to output directory
+        find "${{tmp}}" \\
+            -type f \\
+            \\( -name '*.html' -o -name '*.zip' \\) \\
+            -exec cp {{}} {params.outdir} \\;
         """
 
 
