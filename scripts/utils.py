@@ -16,7 +16,8 @@ from pathlib import Path, PurePath
 
 # ~~~ internals ~~~
 from .files import parse_samplesheet, mk_or_pass_dirs
-from .config import SNAKEFILE, DIRECTORY_CONFIGS, GENOME_CONFIGS, get_current_server, get_resource_config
+from .config import SNAKEFILE, DIRECTORY_CONFIGS, \
+    GENOME_CONFIGS, get_current_server, get_resource_config, get_tmp_dir
 
 
 host = get_current_server()
@@ -83,7 +84,7 @@ def valid_runid(id_to_check):
 
 
 def valid_run_input(run):
-    regex_run_id = r"(\d{6})_([A-Z]{2}\d{5,6})(_\d{1,4})?_([A-Z0-9]{9,10})"
+    regex_run_id = r"(\d{6})_([A-Z]{1,2}\d{5,6})(_\d{1,4})?_(.+)"
     match_id = re.search(regex_run_id, run, re.MULTILINE)
     if match_id:
         return run
@@ -113,9 +114,10 @@ def exec_snakemake(popen_cmd, local=False, dry_run=False, env=None, cwd=None):
     else:
         popen_kwargs['cwd'] = str(Path.cwd())
 
+    parent_jobid = None
     if local or dry_run:
-        proc = Popen(popen_cmd, stdout=PIPE, stderr=STDOUT, **popen_kwargs)
-        parent_jobid = None
+        popen_kwargs['env'].update(os.environ)
+        proc = Popen(map(str, popen_cmd), stdout=PIPE, stderr=STDOUT, **popen_kwargs)
         for line in proc.stdout:
             lutf8 = line.decode('utf-8')
             jid_search = re.search(r"external jobid \'(\d+)\'", lutf8, re.MULTILINE)
@@ -139,19 +141,21 @@ def exec_snakemake(popen_cmd, local=False, dry_run=False, env=None, cwd=None):
 def mk_sbatch_script(wd, cmd):
     if not Path(wd, 'logs', 'masterjob').exists():
         Path(wd, 'logs', 'masterjob').mkdir(mode=0o755, parents=True)
+    tmp_dir = get_tmp_dir(get_current_server())
     master_job_script = \
-    f"""
-    #!/bin/bash
+    f"""#!/bin/bash --login
     #SBATCH --job-name=weave_masterjob
     #SBATCH --output={wd}/logs/masterjob/%x_%j.out
     #SBATCH --error={wd}/logs/masterjob/%x_%j.err
     #SBATCH --ntasks=1
     #SBATCH --cpus-per-task=2
-    #SBATCH --time=02-00:00:00
+    #SBATCH --time=05-00:00:00
     #SBATCH --export=ALL
     #SBATCH --mem=16g
+    #SBATCH -vvv
     """.lstrip()
     master_job_script += get_mods(init=True) + "\n"
+    master_job_script += f"if [ ! -d \"{tmp_dir}\" ]; then mkdir -p \"{tmp_dir}\"; fi\n"
     master_job_script += cmd
     master_job_script = '\n'.join([x.lstrip() for x in master_job_script.split('\n')])
     master_script_location = Path(wd, 'logs', 'masterjob', 'master_jobscript.sh').absolute()
@@ -169,7 +173,9 @@ def get_mods(init=False):
         mod_cmd.append('source /gs1/apps/user/rmlspack/share/spack/setup-env.sh')
         mod_cmd.append('spack load miniconda3@4.11.0')
         mod_cmd.append('source activate snakemake7-19-1')
-    else:
+    elif host == 'skyline':
+        mod_cmd.append('source /data/openomics/bin/dependencies.sh')
+    elif host == 'biowulf':
         if init:
             mod_cmd.append('source /etc/profile.d/modules.sh')
         else:
@@ -214,8 +220,10 @@ def get_mounts(*extras):
                 raise FileNotFoundError(f"Can't mount {str(bind)}, it doesn't exist!")
             file_to, file_from, mode = str(bind), str(bind), 'rw'
         mounts.append(file_from + ':' + file_to + ':' + mode)
+    
+    mounts.append(r'\$TMPDIR:/tmp:rw')
 
-    return "\'-B " + ','.join(mounts) + "\'"
+    return ','.join(mounts)
 
 
 def exec_pipeline(configs, dry_run=False, local=False):
@@ -235,7 +243,7 @@ def exec_pipeline(configs, dry_run=False, local=False):
     top_config_dirs = [Path(c_dir, '.config').absolute() for c_dir in configs['out_to']]
     _dirs = top_singularity_dirs + top_config_dirs
     mk_or_pass_dirs(*_dirs)
-    skip_config_keys = ('resources', 'runqc')
+    skip_config_keys = ('resources', 'runqc', 'use_scratch')
 
     for i in range(0, len(configs['run_ids'])):
         this_config = {k: (v[i] if k not in skip_config_keys else v) for k, v in configs.items() if v}
@@ -258,27 +266,20 @@ def exec_pipeline(configs, dry_run=False, local=False):
         top_env['SNK_CONFIG'] = str(config_file.absolute())
         top_env['SINGULARITY_CACHEDIR'] = str(Path(this_config['out_to'], '.singularity').absolute())
         this_cmd = [
-            "snakemake",
-            "-pr",
-            "--use-singularity",
-            "--rerun-incomplete",
-            "--keep-incomplete",
-            "--rerun-triggers", "mtime",
-            "--verbose",
-            "-s", snake_file,
-            "--profile", fastq_demux_profile
+            "snakemake", "-p", "--use-singularity", "--rerun-incomplete", "--keep-incomplete",
+            "--rerun-triggers", "mtime", "--verbose", "-s", snake_file,
         ]
-        if singularity_binds:
-            this_cmd.extend(["--singularity-args", singularity_binds])
 
-        if not local:
-            this_cmd.extend(["--profile", f"{fastq_demux_profile}"])
+        if singularity_binds and not dry_run:
+            this_cmd.extend(["--singularity-args", f"\"--env 'TMPDIR=/tmp' -C -B '{singularity_binds}'\""])
 
         if dry_run:
             print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC}{esc_colors.UNDERLINE}Dry run{esc_colors.ENDC} " + \
                   f"demultiplexing of run {esc_colors.BOLD}{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
-            this_cmd.extend(['--dry-run', '-p'])
+            this_cmd.extend(['--dry-run'])
         else:
+            if not local:
+                this_cmd.extend(["--profile", fastq_demux_profile])
             print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC}Executing ngs qc pipeline for run {esc_colors.BOLD}"
                   f"{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
 

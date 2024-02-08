@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 import argparse
 import subprocess
+import os
 from pathlib import Path
 from scripts import utils, files, config, cache
 
@@ -11,7 +12,7 @@ def run(args):
     Main frontend for demultiplexing and QA/QC
     """
     runs = files.get_run_directories(args.rundir, seq_dir=args.seq_dir, sheetname=args.sheetname)
-    exec_config = config.base_config(qc=args.noqc)
+    exec_config = config.base_config(qc=args.noqc, slurm_id=os.environ.get("SLURM_JOB_ID", None))
  
     for (rundir, run_infos) in runs:
         sample_sheet = run_infos['samplesheet']
@@ -26,9 +27,9 @@ def run(args):
         pairs = ['1', '2'] if sample_sheet.is_paired_end else ['1']
          
         # ~~~ demultiplexing configuration ~~~
-        bcls = [x for x in Path(rundir).rglob('*.bcl.*') if not 'tmp' in str(x)]
+        bcls = [x.absolute() for x in Path(rundir).rglob('*.bcl.*') if not 'tmp' in str(x)]
         if not bcls:
-            bcls = [x for x in Path(rundir).rglob('*.cbcl') if not 'tmp' in str(x)]
+            bcls = [x.absolute() for x in Path(rundir).rglob('*.cbcl') if not 'tmp' in str(x)]
         exec_config['sample_sheet'].append(str(sample_sheet.path))
         exec_config['bcl_files'].append(bcls)
         exec_config['demux_data'].append(files.check_if_demuxed(rundir))
@@ -124,4 +125,15 @@ if __name__ == '__main__':
     parser_cache.set_defaults(func = get_cache)
     parser_unlock.set_defaults(func = unlock_dir)
     args = main_parser.parse_args()
+
+    if not hasattr(args, 'func'):
+        print(main_parser.print_help())
+        print('---')
+        print(parser_run.print_help())
+        print('---')
+        print(parser_cache.print_help())
+        print('---')
+        print(parser_unlock.print_help())
+        exit(0)
+    
     args.func(args)

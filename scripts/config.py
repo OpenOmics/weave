@@ -1,8 +1,12 @@
 import re
 import json
+import traceback
+import logging
 from pathlib import Path
 from os import access as check_access, R_OK
+from os.path import expandvars, expanduser
 from socket import gethostname
+from uuid import uuid4
 from collections import defaultdict
 
 
@@ -20,11 +24,11 @@ def get_current_server():
     re_biowulf_head = (r"biowulf\.nih\.gov", "biowulf")
     re_biowulf_compute = (r"cn\d{4}", "biowulf")
     
-    # locus hostnames
-    re_locus_head = (r"ai\-submit\d{1}", "locus")
-    re_locus_compute = (r"ai\-hpcn\d{3}", "locus")
+    # skyline hostnames
+    re_skyline_head = (r"ai-hpc(submit|n)(\d+)?", "skyline")
+    re_skyline_compute = (r"ai-hpc(submit|n)(\d+)?", "skyline")
 
-    host_profiles = [re_bigsky, re_biowulf_compute, re_biowulf_head, re_locus_compute, re_locus_head]
+    host_profiles = [re_bigsky, re_biowulf_compute, re_biowulf_head, re_skyline_head, re_skyline_compute]
 
     host = None
     for pat, this_host in host_profiles:
@@ -91,13 +95,14 @@ def get_resource_config():
     return json.load(open(resource_json))
 
 
-def base_config(keys=None, qc=True):
+def base_config(keys=None, qc=True, slurm_id=None):
     base_keys = ('runs', 'run_ids', 'project', 'rnums', 'bcl_files', \
                 'sample_sheet', 'samples', 'sids', 'out_to', 'demux_input_dir', \
                 'bclconvert', 'demux_data')
     this_config = {k: [] for k in base_keys}
     this_config['resources'] = get_resource_config()
     this_config['runqc'] = qc
+    this_config['use_scratch'] = True if slurm_id else False
 
     if keys:
         for elem_key in keys:
@@ -147,6 +152,22 @@ def get_bigsky_seq_dirs():
     return seq_dirs
 
 
+def get_tmp_dir(host):
+    TMP_CONFIGS = {
+        'skyline': {'user': '/data/scratch/$USER/$SLURM_JOBID', 'global': '/data/scratch/$USER/' + str(uuid4())},
+        'bigsky': {'user': '/gs1/Scratch/$USER/$SLURM_JOBID', 'global': '/gs1/Scratch/$USER/' + str(uuid4())},
+        'biowulf': {'user': '/lscratch/$SLURM_JOBID', 'global': '/tmp/$USER/' + str(uuid4())}
+    }
+
+    this_tmp = TMP_CONFIGS[host]['user']
+
+    # this directory, if it does not exist, 
+    if Path(this_tmp).parents[0].exists():
+        return this_tmp
+    else:
+        return TMP_CONFIGS[host]['global']
+
+
 DIRECTORY_CONFIGS = {
     "bigsky": {
         "seqroot": "/gs1/RTS/NextGen/SequencerRuns/",
@@ -157,6 +178,11 @@ DIRECTORY_CONFIGS = {
         "seqroot": "/data/RTB_GRS/SequencerRuns/",
         "seq": get_biowulf_seq_dirs(),
         "profile": Path(Path(__file__).parent.parent, "utils", "profiles", "biowulf").resolve(),
+    },
+    "skyline": {
+        "seqroot": "/data/rtb_grs/SequencerRuns/",
+        "seq": get_bigsky_seq_dirs(),
+        "profile": Path(Path(__file__).parent.parent, "utils", "profiles", "skyline").resolve(),
     }
 }
 

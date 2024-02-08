@@ -71,7 +71,7 @@ rule kaiju_annotation:
         nodes               = config["resources"]["mounts"]["kaiju"]["to"] + "/nodes.dmp",
         names               = config["resources"]["mounts"]["kaiju"]["to"] + "/names.dmp",
         database            = config["resources"]["mounts"]["kaiju"]["to"] + "/kaiju_db_nr_euk.fmi",
-        reads_in_arg        = lambda wc, input, output: f"-j {input.read1} -i {input.read2}" if input.read2 else f"-j {input.read1}",
+        reads_in_arg        = lambda wc, input, output: f"-j {input.read1} -i {input.read2}" if input.read2 else f"-i {input.read1}",
     containerized: config["resources"]["sif"] + "weave_ngsqc_0.0.1.sif"
     log: config['out_to'] + "/logs/" + config["project"] + "/kaiju/{sids}.log",
     threads: 24
@@ -104,6 +104,7 @@ rule kraken_annotation:
     params:
         kraken_db           = config["resources"]["mounts"]["kraken2"]["to"],
         reads_in_arg        = lambda wc, input, output: f"{input.read1} {input.read2}" if input.read2 else f"{input.read1}",
+        ended_arg           = lambda wc, input, output: "--paired " if input.read2 else "",
     containerized: config["resources"]["sif"] + "weave_ngsqc_0.0.1.sif",
     log: config['out_to'] + "/logs/" + config["project"] + "/kraken/{sids}.log",
     threads: 24
@@ -115,7 +116,7 @@ rule kraken_annotation:
         kraken2 \
         --threads {threads} \
         --db {params.kraken_db} \
-        --gzip-compressed --paired \
+        --gzip-compressed {params.ended_arg}\
         --report {output.kraken_report} \
         --output {output.kraken_log} \
         {params.reads_in_arg}

@@ -33,20 +33,17 @@ rule bcl2fastq:
         out_dir                = config["out_to"] + "/demux",
     container: config["resources"]["sif"] + "bcl2fastq.sif",
     log: config["out_to"] + "/logs/bcl2fastq/" + config["run_ids"] + "_" + config["project"] + ".log",
-    threads: 26
+    threads: 34
     resources: 
-        mem_mb = "32G",
-        slurm_partition = "quick",
-        runtime = 60*4,
-        tasks = 1,
-        disk_mb = 5*1024
+        mem_mb = int(64e3),
+        runtime = 4*60,
     shell: 
         """
             bcl2fastq \
             --sample-sheet {input.samplesheet} \
             --runfolder-dir {input.run_dir} \
             --min-log-level=TRACE \
-            -r 8 -p 8 -w 8 \
+            -r 8 -p 16 -w 8 \
             --fastq-compression-level 9 \
             --no-lane-splitting \
             -o {params.out_dir}
@@ -95,8 +92,10 @@ rule bclconvert:
         top_unknown            = expand("{out_to}/demux/Reports/Top_Unknown_Barcodes.csv", **demux_expand_args if config['bclconvert'] else demux_noop_args),
         breadcrumb             = expand("{out_to}/demux/.BC_DEMUX_COMPLETE", **demux_expand_args if config['bclconvert'] else demux_noop_args),
     container: config["resources"]["sif"] + "weave_bclconvert_0.0.3.sif",
-    threads: 75
-    resources: mem_mb = int(64e3)
+    threads: 50
+    resources: 
+        mem_mb = int(64e3),
+        runtime = 4*60,
     shell:
         """
         bcl-convert \
@@ -106,10 +105,10 @@ rule bclconvert:
         --sample-sheet {input.samplesheet} \
         --fastq-gzip-compression-level 9 \
         --bcl-sampleproject-subdirectories true \
-        --bcl-num-conversion-threads 24 \
-        --bcl-num-compression-threads 24 \
-        --bcl-num-decompression-threads 24 \
-        --bcl-num-parallel-tiles 3 \
+        --bcl-num-conversion-threads 10 \
+        --bcl-num-compression-threads 10 \
+        --bcl-num-decompression-threads 4 \
+        --bcl-num-parallel-tiles 2 \
         --no-lane-splitting true
         touch {output.breadcrumb}
         """

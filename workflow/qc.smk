@@ -23,10 +23,11 @@ rule fastqc_untrimmed:
         fqreport      = config['out_to'] + "/" + config["project"] + "/{sids}/fastqc_untrimmed/{sids}_R{rnums}_" + trim_input_suffix + "_fastqc.zip",
     params:
         output_dir    = lambda w: config['out_to'] + "/" + config["project"] + "/" + w.sids + "/fastqc_untrimmed/"
-    log: config['out_to'] + "/logs/" + "/" + config["project"] + "/fastqc_untrimmed/{sids}_R{rnums}.log"
+    log: config['out_to'] + "/logs/" + config["project"] + "/fastqc_untrimmed/{sids}_R{rnums}.log"
     threads: 4
-    containerized: config["resources"]["sif"] + "weave_ngsqc_0.0.1.sif"
-    resources: mem_mb = 8096
+    containerized: config["resources"]["sif"] + "weave_ngsqc_0.0.2.sif"
+    resources: 
+        mem_mb = 8096
     shell:
         """
         mkdir -p {params.output_dir}
@@ -41,15 +42,39 @@ rule fastqc_trimmed:
         html          = config['out_to'] + "/" + config["project"] + "/{sids}/fastqc_trimmed/{sids}_trimmed_R{rnums}_fastqc.html",
         fqreport      = config['out_to'] + "/" + config["project"] + "/{sids}/fastqc_trimmed/{sids}_trimmed_R{rnums}_fastqc.zip",
     params:
-        output_dir    = lambda w: config['out_to'] + "/" + config["project"] + "/" + w.sids + "/fastqc_trimmed/"
-    containerized: config["resources"]["sif"] + "weave_ngsqc_0.0.1.sif"
+        output_dir    = lambda w: config['out_to'] + "/" + config["project"] + "/" + w.sids + "/fastqc_trimmed/",
+        tmpdir        = lambda wc: '/tmp/' + wc.sids,
+    containerized: config["resources"]["sif"] + "weave_ngsqc_0.0.2.sif"
     threads: 4
-    resources: mem_mb = 8096
+    resources: 
+        mem_mb        = 8096,
+        disk_mb       = int(500e3) if config.get('use_scratch', True) else 0,
     log: config['out_to'] + "/logs/" + config["project"] + "/fastqc_trimmed/{sids}_R{rnums}.log"
     shell:
         """
-        mkdir -p {params.output_dir}
-        fastqc -o {params.output_dir} -t {threads} {input.in_read}
+        # Setups temporary directory for
+        # intermediate files with built-in 
+        # mechanism for deletion on exit
+        if [ ! -d "{params.tmpdir}" ]; then mkdir -p "{params.tmpdir}"; fi
+        tmp=$(mktemp -d -p "{params.tmpdir}")
+        trap 'rm -rf "${{tmp}}"' EXIT
+        
+        # Running fastqc with local
+        # disk or a tmpdir, fastqc
+        # has been observed to lock
+        # up gpfs filesystems, adding
+        # this on request by HPC staff. 
+        fastqc \\
+            {input.in_read} \\
+            -t {threads} \\
+            -o "${{tmp}}"
+        
+        # Copy output files from tmpdir
+        # to output directory
+        find "${{tmp}}" \\
+            -type f \\
+            \\( -name '*.html' -o -name '*.zip' \\) \\
+            -exec cp {{}} {params.output_dir} \\;
         """
 
 
@@ -124,7 +149,7 @@ rule multiqc_report:
         input_dir       = config['out_to'],
         output_dir      = config['out_to'] + "/" + config["project"] + "/multiqc/",
         report_title    = "Run: " + config["run_ids"] + ", Project: " + config["project"],
-    containerized: config["resources"]["sif"] + "weave_ngsqc_0.0.1.sif"
+    containerized: config["resources"]["sif"] + "weave_ngsqc_0.0.2.sif"
     threads: 4
     resources: mem_mb = 8096
     log: 
