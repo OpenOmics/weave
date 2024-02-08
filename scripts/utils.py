@@ -266,26 +266,20 @@ def exec_pipeline(configs, dry_run=False, local=False):
         top_env['SNK_CONFIG'] = str(config_file.absolute())
         top_env['SINGULARITY_CACHEDIR'] = str(Path(this_config['out_to'], '.singularity').absolute())
         this_cmd = [
-            "snakemake", "-p",
-            "--use-singularity",
-            "--rerun-incomplete",
-            "--keep-incomplete",
-            "--rerun-triggers", "mtime",
-            "--verbose",
-            "-s", snake_file,
-            "--profile", fastq_demux_profile
+            "snakemake", "-p", "--use-singularity", "--rerun-incomplete", "--keep-incomplete",
+            "--rerun-triggers", "mtime", "--verbose", "-s", snake_file,
         ]
+
         if singularity_binds and not dry_run:
             this_cmd.extend(["--singularity-args", f"\"--env 'TMPDIR=/tmp' -C -B '{singularity_binds}'\""])
-
-        if not local:
-            this_cmd.extend(["--profile", f"{fastq_demux_profile}"])
 
         if dry_run:
             print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC}{esc_colors.UNDERLINE}Dry run{esc_colors.ENDC} " + \
                   f"demultiplexing of run {esc_colors.BOLD}{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
             this_cmd.extend(['--dry-run'])
         else:
+            if not local:
+                this_cmd.extend(["--profile", fastq_demux_profile])
             print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC}Executing ngs qc pipeline for run {esc_colors.BOLD}"
                   f"{esc_colors.OKGREEN}{this_config['run_ids']}{esc_colors.ENDC}...")
 
