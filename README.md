@@ -11,7 +11,7 @@
   </i>
 </div>
 
-!(weave dag)[https://github.com/OpenOmics/weave/blob/main/weavedag.png]
+!(weave dag)[weavedag.png]
 
 ## Overview
 Welcome to weave's documentation! This guide is the main source of documentation for users that are getting started with the [weave](https://github.com/OpenOmics/weave/). 
