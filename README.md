@@ -7,9 +7,14 @@
   [![tests](https://github.com/OpenOmics/weave/actions/workflows/dryrun.yaml/badge.svg)](https://github.com/OpenOmics/weave/actions/workflows/dryrun.yaml) [![docs](https://github.com/OpenOmics/weave/actions/workflows/doc.yml/badge.svg)](https://github.com/OpenOmics/weave/actions/workflows/docs.yml) [![GitHub issues](https://img.shields.io/github/issues/OpenOmics/weave?color=brightgreen)](https://github.com/OpenOmics/weave/issues)  [![GitHub license](https://img.shields.io/github/license/OpenOmics/weave)](https://github.com/OpenOmics/weave/blob/main/LICENSE) 
   
   <i>
-    This is the home of the pipeline, weave. Its long-term goals: to provide accurate quantification, taxonomic classification, and functional profiling of assembled (bacteria and archaea) metagenomes!
+    This is the home of the demultiplexing and quality control pipeline, weave. Its long-term goal is to serve as a push-button pipeline for demultiplexing and creation of quality control artifacts for assessing the quality of incoming illumnia sequnecing dataset.
   </i>
 </div>
+
+<p align="center" dir="auto">
+    <img src="https://github.com/OpenOmics/weave/blob/docs_update/weavedag.png?raw=true" alt="weave DAG">
+</p>
+
 
 ## Overview
 Welcome to weave's documentation! This guide is the main source of documentation for users that are getting started with the [weave](https://github.com/OpenOmics/weave/). 
