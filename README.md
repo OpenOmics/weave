@@ -11,7 +11,10 @@
   </i>
 </div>
 
-!(weave dag)[weavedag.png]
+<p align="center" dir="auto">
+    <img src="https://github.com/OpenOmics/weave/blob/docs_update/weavedag.png?raw=true" alt="weave DAG">
+</p>
+
 
 ## Overview
 Welcome to weave's documentation! This guide is the main source of documentation for users that are getting started with the [weave](https://github.com/OpenOmics/weave/). 
