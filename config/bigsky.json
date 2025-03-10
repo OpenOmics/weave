@@ -1,5 +1,5 @@
 {
-    "sif": "/gs1/RTS/OpenOmics/SIFs/",
+    "sif": "/data/openomics/SIFs/",
     "mounts": {
         "kaiju": {
             "to": "/opt/kaiju",
