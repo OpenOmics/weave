@@ -50,7 +50,7 @@ If executing from BigSky cluster:
 
 ```bash
 # Step 4.) spack load snakemake and depdenencies
-source /gs1/RTS/OpenOmics/bin/dependencies.sh
+source /data/openomics/bin/dependencies.sh
 ```
 
 ### Execution

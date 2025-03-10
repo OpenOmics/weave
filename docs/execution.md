@@ -12,8 +12,8 @@ The **weave** pipeline can be triggered from a head node in a non-interactive fa
 ## Bigsky/Skyline
 
 !!! Note
-    Dependency files for skyline and bigsky differ <br />
-    **Bigsky: `/gs1/RTS/OpenOmics/bin/dependencies.sh`** <br />
+    Dependency files for skyline and bigsky are now the same <br />
+    **Bigsky: `/data/openomics/bin/dependencies.sh`** <br />
     **Skyline: `/data/openomics/bin/dependencies.sh`**
 
 ```bash
@@ -35,8 +35,8 @@ srun --export=ALL "module load snakemake singularity; weave run [keyword args] $
 ## Bigsky/Skyline
 
 !!! Note
-    Dependency files for skyline and bigsky differ <br />
-    **Bigsky: `/gs1/RTS/OpenOmics/bin/dependencies.sh`** <br />
+    Dependency files for skyline and bigsky are now the same <br />
+    **Bigsky: `/data/openomics/bin/dependencies.sh`** <br />
     **Skyline: `/data/openomics/bin/dependencies.sh`**
 
 ```bash
