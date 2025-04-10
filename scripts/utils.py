@@ -97,7 +97,7 @@ def valid_run_input(run):
 
 
 def exec_snakemake(popen_cmd, local=False, dry_run=False, env=None, cwd=None):
-    # async execution w/ filter: 
+    # async execution w/ filter:
     #   - https://gist.github.com/DGrady/b713db14a27be0e4e8b2ffc351051c7c
     #   - https://lysator.liu.se/~bellman/download/asyncproc.py
     #   - https://gist.github.com/kalebo/1e085ee36de45ffded7e5d9f857265d0
@@ -170,9 +170,7 @@ def get_mods(init=False):
     mod_cmd = []
 
     if host == 'bigsky':
-        mod_cmd.append('source /gs1/apps/user/rmlspack/share/spack/setup-env.sh')
-        mod_cmd.append('spack load miniconda3@4.11.0')
-        mod_cmd.append('source activate snakemake7-19-1')
+        mod_cmd.append('module load snakemake')
     elif host == 'skyline':
         mod_cmd.append('source /data/openomics/bin/dependencies.sh')
     elif host == 'biowulf':
@@ -220,7 +218,7 @@ def get_mounts(*extras):
                 raise FileNotFoundError(f"Can't mount {str(bind)}, it doesn't exist!")
             file_to, file_from, mode = str(bind), str(bind), 'rw'
         mounts.append(file_from + ':' + file_to + ':' + mode)
-    
+
     mounts.append(r'\$TMPDIR:/tmp:rw')
 
     return ','.join(mounts)
