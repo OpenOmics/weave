@@ -169,7 +169,7 @@ def get_mods(init=False):
     mod_cmd = []
 
     if host == 'bigsky':
-        mod_cmd.append('module load snakemake')
+        mod_cmd.append('module load snakemake/7.22.0-ufanewz')
     elif host == 'skyline':
         mod_cmd.append('source /data/openomics/bin/dependencies.sh')
     elif host == 'biowulf':
@@ -263,13 +263,15 @@ def exec_pipeline(configs, dry_run=False, local=False):
         top_env['PATH'] = os.environ["PATH"]
         top_env['SNK_CONFIG'] = str(config_file.absolute())
         top_env['SINGULARITY_CACHEDIR'] = str(Path(this_config['out_to'], '.singularity').absolute())
+        top_env['SINGULARITY_CONTAINALL'] = '1'
+        top_env['APPTAINER_CONTAINALL'] = '1'
         this_cmd = [
             "snakemake", "-p", "--cores", "2", "--use-singularity", "--rerun-incomplete", "--keep-incomplete",
             "--rerun-triggers", "mtime", "--verbose", "-s", str(snake_file),
         ]
 
         if singularity_binds and not dry_run:
-            this_cmd.extend(["--singularity-args", f"'\-C \-B {singularity_binds}'"])
+            this_cmd.extend(["--singularity-args", f"\"-B '{singularity_binds}'\""])
 
         if dry_run:
             print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC}{esc_colors.UNDERLINE}Dry run{esc_colors.ENDC} " + \
