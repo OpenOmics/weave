@@ -131,7 +131,7 @@ def get_bigsky_seq_dirs():
     Returns:
         (list): list of `pathlib.Path`s of all sequencing directories on bigsky server
     """
-    top_dir = Path("/gs1/RTS/NextGen/SequencerRuns/")
+    top_dir = Path("/data/rml_ngs/SequencerRuns/")
     transfer_breadcrumb = "RTAComplete.txt"
     if not top_dir.exists():
         return None
@@ -170,7 +170,7 @@ def get_tmp_dir(host):
 
 DIRECTORY_CONFIGS = {
     "bigsky": {
-        "seqroot": "/gs1/RTS/NextGen/SequencerRuns/",
+        "seqroot": "/data/rml_ngs/SequencerRuns",
         "seq": get_bigsky_seq_dirs(),
         "profile": Path(Path(__file__).parent.parent, "utils", "profiles", "bigsky").resolve(),
     },
