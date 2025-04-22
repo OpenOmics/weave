@@ -76,7 +76,7 @@ rule kaiju_annotation:
     log: config['out_to'] + "/logs/" + config["project"] + "/kaiju/{sids}.log",
     threads: 24
     resources: 
-        mem_mb = 220000, 
+        mem_mb = 300000, 
         runtime = 60*24*2
     shell:
         """
@@ -109,7 +109,7 @@ rule kraken_annotation:
     log: config['out_to'] + "/logs/" + config["project"] + "/kraken/{sids}.log",
     threads: 24
     resources: 
-        mem_mb = 220000,
+        mem_mb = 300000,
         runtime = 60*24*2
     shell:
         """

@@ -13,7 +13,7 @@ from .config import get_current_server, GENOME_CONFIGS, DIRECTORY_CONFIGS
 
 def get_all_seq_dirs(top_dir, server):
     """
-        Gather and return all sequencing directories from the `top_dir`. 
+        Gather and return all sequencing directories from the `top_dir`.
         This is tightly coupled at the moment to the directory that is on RML-BigSky.
         In the future will need to the take a look at how to do this more generally
     """
@@ -42,7 +42,7 @@ def valid_run_output(output_directory, dry_run=False):
     output_directory = Path(output_directory).absolute()
     if not output_directory.exists():
         output_directory.mkdir(parents=True, mode=0o765)
-    
+
     if not check_access(output_directory, W_OK):
         raise PermissionError(f'Can not write to output directory {output_directory}')
     return output_directory
@@ -70,7 +70,7 @@ def valid_fasta(suspect):
 
     if not is_valid:
         raise ValueError
-            
+
     return suspect
 
 
@@ -147,7 +147,7 @@ def find_demux_dir(run_dir):
 
     if len(demux_stat_files) != 1:
         raise FileNotFoundError
-    
+
     return Path(demux_stat_files[0], '..').absolute()
 
 
@@ -160,7 +160,7 @@ def get_run_directories(runids, seq_dir=None, sheetname=None):
             for secondchild in firstchild.iterdir():
                 seq_contents.append(secondchild)
     seq_contents_names = [child for child in map(lambda d: d.name, seq_contents)]
-    
+
     run_paths, invalid_runs  = [], []
     run_return = []
     for run in runids:
@@ -192,7 +192,7 @@ def get_run_directories(runids, seq_dir=None, sheetname=None):
             sheet = Path(run_p, sheetname).absolute()
         else:
             raise FileNotFoundError(f'Run {rid}({run_p}) does not have a find-able sample sheet.')
-        
+
         this_run_info['samplesheet'] = parse_samplesheet(sheet)
         this_run_info.update({info.tag: info.text for run in runinfo_xml.getroot() for info in run \
                              if info.text is not None and info.text.strip() not in ('\n', '')})
@@ -201,5 +201,5 @@ def get_run_directories(runids, seq_dir=None, sheetname=None):
     if invalid_runs:
         raise ValueError('Runs entered are invalid (missing sequencing artifacts or directory does not exist): \n' + \
                          ', '.join(invalid_runs))
-    
+
     return run_return

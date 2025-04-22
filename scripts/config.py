@@ -23,7 +23,7 @@ def get_current_server():
     # biowulf hostnames
     re_biowulf_head = (r"biowulf\.nih\.gov", "biowulf")
     re_biowulf_compute = (r"cn\d{4}", "biowulf")
-    
+
     # skyline hostnames
     re_skyline_head = (r"ai-hpc(submit|n)(\d+)?", "skyline")
     re_skyline_compute = (r"ai-hpc(submit|n)(\d+)?", "skyline")
@@ -48,7 +48,7 @@ FRCE_PROD = "hgrepo.niaid.nih.gov",
 FRCE_PATH = "COVID-19_Consortium"
 
 
-# ~~~ labkey configurations ~~~ 
+# ~~~ labkey configurations ~~~
 CONTEXT_PATH = "labkey"
 LABKEY_CONFIGS = {
     "bigsky": {"domain": BIGSKY_DEV, "container_path": BIGSKY_PATH, "context_path": CONTEXT_PATH, "use_ssl": True},
@@ -56,7 +56,7 @@ LABKEY_CONFIGS = {
 }
 
 
-# ~~~ snakemake configurations ~~~ 
+# ~~~ snakemake configurations ~~~
 illumina_pipelines = defaultdict(lambda: Path(Path(__file__).parent.parent, "workflow", "Snakefile").resolve())
 # can add support for NextSeq2k and bclconvert here
 SNAKEFILE = {
@@ -69,7 +69,7 @@ remote_resource_confg = Path(Path(__file__).parent, '..', 'config', 'remote.json
 
 
 def get_resource_config():
-    """Return a dictionary containing server specific references utilized in 
+    """Return a dictionary containing server specific references utilized in
     the workflow for directories or reference files.
 
     Returns:
@@ -131,7 +131,7 @@ def get_bigsky_seq_dirs():
     Returns:
         (list): list of `pathlib.Path`s of all sequencing directories on bigsky server
     """
-    top_dir = Path("/gs1/RTS/NextGen/SequencerRuns/")
+    top_dir = Path("/data/rml_ngs/SequencerRuns/")
     transfer_breadcrumb = "RTAComplete.txt"
     if not top_dir.exists():
         return None
@@ -141,7 +141,7 @@ def get_bigsky_seq_dirs():
         for this_child_elem in this_dir.iterdir():
             try:
                 elem_checks = [
-                    this_child_elem.is_dir(), 
+                    this_child_elem.is_dir(),
                     Path(this_child_elem, transfer_breadcrumb).exists(),
                     check_access(this_child_elem, R_OK)
                 ]
@@ -155,13 +155,13 @@ def get_bigsky_seq_dirs():
 def get_tmp_dir(host):
     TMP_CONFIGS = {
         'skyline': {'user': '/data/scratch/$USER/$SLURM_JOBID', 'global': '/data/scratch/$USER/' + str(uuid4())},
-        'bigsky': {'user': '/gs1/Scratch/$USER/$SLURM_JOBID', 'global': '/gs1/Scratch/$USER/' + str(uuid4())},
+        'bigsky': {'user': '/data/scratch/$USER/$SLURM_JOBID', 'global': '/data/scratch/$USER/' + str(uuid4())},
         'biowulf': {'user': '/lscratch/$SLURM_JOBID', 'global': '/tmp/$USER/' + str(uuid4())}
     }
 
     this_tmp = TMP_CONFIGS[host]['user']
 
-    # this directory, if it does not exist, 
+    # this directory, if it does not exist,
     if Path(this_tmp).parents[0].exists():
         return this_tmp
     else:
@@ -170,7 +170,7 @@ def get_tmp_dir(host):
 
 DIRECTORY_CONFIGS = {
     "bigsky": {
-        "seqroot": "/gs1/RTS/NextGen/SequencerRuns/",
+        "seqroot": "/data/rml_ngs/SequencerRuns",
         "seq": get_bigsky_seq_dirs(),
         "profile": Path(Path(__file__).parent.parent, "utils", "profiles", "bigsky").resolve(),
     },

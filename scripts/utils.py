@@ -97,7 +97,7 @@ def valid_run_input(run):
 
 
 def exec_snakemake(popen_cmd, local=False, dry_run=False, env=None, cwd=None):
-    # async execution w/ filter: 
+    # async execution w/ filter:
     #   - https://gist.github.com/DGrady/b713db14a27be0e4e8b2ffc351051c7c
     #   - https://lysator.liu.se/~bellman/download/asyncproc.py
     #   - https://gist.github.com/kalebo/1e085ee36de45ffded7e5d9f857265d0
@@ -113,7 +113,6 @@ def exec_snakemake(popen_cmd, local=False, dry_run=False, env=None, cwd=None):
         popen_kwargs['cwd'] = cwd
     else:
         popen_kwargs['cwd'] = str(Path.cwd())
-
     parent_jobid = None
     if local or dry_run:
         popen_kwargs['env'].update(os.environ)
@@ -170,9 +169,7 @@ def get_mods(init=False):
     mod_cmd = []
 
     if host == 'bigsky':
-        mod_cmd.append('source /gs1/apps/user/rmlspack/share/spack/setup-env.sh')
-        mod_cmd.append('spack load miniconda3@4.11.0')
-        mod_cmd.append('source activate snakemake7-19-1')
+        mod_cmd.append('module load snakemake/7.22.0-ufanewz')
     elif host == 'skyline':
         mod_cmd.append('source /data/openomics/bin/dependencies.sh')
     elif host == 'biowulf':
@@ -220,8 +217,9 @@ def get_mounts(*extras):
                 raise FileNotFoundError(f"Can't mount {str(bind)}, it doesn't exist!")
             file_to, file_from, mode = str(bind), str(bind), 'rw'
         mounts.append(file_from + ':' + file_to + ':' + mode)
-    
-    mounts.append(r'\$TMPDIR:/tmp:rw')
+
+    if 'TMPDIR' in os.environ:
+        mounts.append(os.environ['TMPDIR'] + ':/tmp:rw')
 
     return ','.join(mounts)
 
@@ -265,13 +263,15 @@ def exec_pipeline(configs, dry_run=False, local=False):
         top_env['PATH'] = os.environ["PATH"]
         top_env['SNK_CONFIG'] = str(config_file.absolute())
         top_env['SINGULARITY_CACHEDIR'] = str(Path(this_config['out_to'], '.singularity').absolute())
+        top_env['SINGULARITY_CONTAINALL'] = '1'
+        top_env['APPTAINER_CONTAINALL'] = '1'
         this_cmd = [
-            "snakemake", "-p", "--use-singularity", "--rerun-incomplete", "--keep-incomplete",
-            "--rerun-triggers", "mtime", "--verbose", "-s", snake_file,
+            "snakemake", "-p", "--cores", "2", "--use-singularity", "--rerun-incomplete", "--keep-incomplete",
+            "--rerun-triggers", "mtime", "--verbose", "-s", str(snake_file),
         ]
 
         if singularity_binds and not dry_run:
-            this_cmd.extend(["--singularity-args", f"\"--env 'TMPDIR=/tmp' -C -B '{singularity_binds}'\""])
+            this_cmd.extend(["--singularity-args", f"\"-B '{singularity_binds}'\""])
 
         if dry_run:
             print(f"{esc_colors.OKGREEN}> {esc_colors.ENDC}{esc_colors.UNDERLINE}Dry run{esc_colors.ENDC} " + \

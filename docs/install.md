@@ -37,23 +37,14 @@ Biowulf uses environmental modules to control software. After executing the abov
 > [+] Loading singularity  4.X.X  on cnXXXX
 
 ```bash title="<b>Bigsky</b>"
-source /data/openomics/bin/dependencies.sh`
+source /data/openomics/bin/source_weave.sh
 ```
 
-Bigsky uses spack to load modules so a consolidated conda environment with snakemake is activated:
+Bigsky uses the same lua module load system that biowulf uses for weave.
 
 ```bash title="dependencies.sh"
-if [ ! -x "$(command -v "snakemake")" ]; then
-    source /gs1/apps/user/rmlspack/share/spack/setup-env.sh
-    export PS1="${PS1:-}"
-    spack load -r miniconda3@4.11.0/y4vyh4u
-    source activate snakemake7-19-1
-fi
-# Add this folder to $PATH
-export PATH="/data/openomics/bin:${PATH}"
-# Add different pipelines to $PATH
-export PATH="/data/openomics/prod/rna-seek/latest:${PATH}"
-export PATH="/data/openomics/prod/metavirs/latest:${PATH}"
+module load snakemake/7.22.0-ufanewz
+pip install -r /data/openomics/prod/weave/latest/requirements.txt
 ```
 
 While, singularity is installed to the **BigSky** system and available upon login.

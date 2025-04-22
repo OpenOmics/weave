@@ -1,6 +1,7 @@
 logs
 .snakemake
 site
+__pycache__
 output
 .tests/illumnia_demux/dry_run_out
 .tests/dry_run_out
